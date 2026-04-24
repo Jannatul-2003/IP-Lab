@@ -225,7 +225,7 @@ export const mockExpenditures: Expenditure[] = [
 export const mockGallery: MediaItem[] = [
   {
     id: "img1",
-    url: "images/seminar.jpeg",
+    url: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800",
     mediaType: "image",
     tags: ["seminar", "2025"],
     eventId: "e2",

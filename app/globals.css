@@ -14,9 +14,14 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+html {
+  position: relative;
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
 
 body {
+  position: relative;
   font-family: 'DM Sans', Inter, sans-serif;
   background-color: #fafcff;
   color: #1a2332;
