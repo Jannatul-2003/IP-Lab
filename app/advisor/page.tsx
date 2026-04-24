@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Eye, Users, DollarSign, Vote, FileText, BookOpen } from "lucide-react";
@@ -22,8 +22,12 @@ export default function AdvisorPage() {
   const { user } = useAuthContext();
   const router = useRouter();
 
-  if (!user) { router.push("/login"); return null; }
-  if (user.role !== "FACULTY_ADVISOR") { router.push("/dashboard"); return null; }
+  useEffect(() => {
+    if (!user) router.push("/login");
+    else if (user.role !== "FACULTY_ADVISOR") router.push("/dashboard");
+  }, [user, router]);
+
+  if (!user || user.role !== "FACULTY_ADVISOR") return null;
 
   const activeMembers = mockMembers.filter((m) => m.status === "ACTIVE");
   const pendingMembers = mockMembers.filter((m) => m.status === "PENDING");

@@ -173,6 +173,26 @@ export interface MediaItem {
   createdAt: string;
 }
 
+export type MeetingStatus = "upcoming" | "completed" | "cancelled";
+
+export interface MeetingAttendanceRecord {
+  memberId: string;
+  memberName: string;
+  present: boolean;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  agenda: string;
+  scheduledAt: string;
+  venue: string;
+  status: MeetingStatus;
+  calledBy: string;
+  minutesUrl?: string;
+  attendanceRecords: MeetingAttendanceRecord[];
+}
+
 export interface AuditLog {
   id: string;
   actorId?: string;

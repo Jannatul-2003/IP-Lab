@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Shield, Users, Vote, DollarSign, Image, Bell, Settings, Activity, Lock } from "lucide-react";
@@ -46,8 +46,12 @@ export default function AdminPage() {
   const [resetTarget, setResetTarget] = useState<(typeof MOCK_USERS)[0] | null>(null);
   const [loading, setLoading] = useState(false);
 
-  if (!user) { router.push("/login"); return null; }
-  if (user.role !== "SYSTEM_ADMIN") { router.push("/dashboard"); return null; }
+  useEffect(() => {
+    if (!user) router.push("/login");
+    else if (user.role !== "SYSTEM_ADMIN") router.push("/dashboard");
+  }, [user, router]);
+
+  if (!user || user.role !== "SYSTEM_ADMIN") return null;
 
   async function handleReset() {
     setLoading(true);

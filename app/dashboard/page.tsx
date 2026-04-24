@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -29,10 +29,11 @@ export default function DashboardPage() {
   const { t } = useLang();
   const router = useRouter();
 
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!user) router.push("/login");
+  }, [user, router]);
+
+  if (!user) return null;
 
   const rsvpEvents = mockEvents.filter((e) => e.userRsvp);
   const recentNotices = mockNotices.slice(0, 3);

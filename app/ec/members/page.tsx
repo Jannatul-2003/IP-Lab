@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Search, CheckCircle, XCircle, MinusCircle, Users } from "lucide-react";
@@ -27,6 +27,12 @@ export default function EcMembersPage() {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"pending" | "active">("pending");
 
+  useEffect(() => {
+    if (!user || !isEcOfficer(user.role)) router.push("/dashboard");
+  }, [user, router]);
+
+  if (!user || !isEcOfficer(user.role)) return null;
+
   const filtered = useMemo(() => {
     return members.filter((m) => {
       const q = search.toLowerCase();
@@ -35,11 +41,6 @@ export default function EcMembersPage() {
       return matchSearch && m.status === targetStatus;
     });
   }, [members, search, tab]);
-
-  if (!user || !isEcOfficer(user.role)) {
-    router.push("/dashboard");
-    return null;
-  }
 
   async function executeAction(type: ActionType, member: Member) {
     setLoading(true);

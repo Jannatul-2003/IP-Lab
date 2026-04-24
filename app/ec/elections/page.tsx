@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Vote, Play, Square, Trophy, BarChart3, AlertTriangle } from "lucide-react";
@@ -50,10 +50,11 @@ export default function EcElectionsPage() {
   const [loading, setLoading] = useState(false);
   const [selectedPos, setSelectedPos] = useState(Object.keys(MOCK_RESULTS)[0]);
 
-  if (!user || !isEcOfficer(user.role)) {
-    router.push("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (!user || !isEcOfficer(user.role)) router.push("/dashboard");
+  }, [user, router]);
+
+  if (!user || !isEcOfficer(user.role)) return null;
 
   const canControl = can("PRESIDENT") || can("SECRETARY");
   const transition = TRANSITIONS[status];

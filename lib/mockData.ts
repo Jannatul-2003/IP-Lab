@@ -1,4 +1,4 @@
-import { Member, Event, Notice, Election, Budget, MediaItem, Expenditure } from "@/types";
+import { Member, Event, Notice, Election, Budget, MediaItem, Expenditure, Meeting } from "@/types";
 
 export const mockMembers: Member[] = [
   {
@@ -225,7 +225,7 @@ export const mockExpenditures: Expenditure[] = [
 export const mockGallery: MediaItem[] = [
   {
     id: "img1",
-    url: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800",
+    url: "images/seminar.jpeg",
     mediaType: "image",
     tags: ["seminar", "2025"],
     eventId: "e2",
@@ -265,6 +265,49 @@ export const mockGallery: MediaItem[] = [
     mediaType: "image",
     tags: ["meeting", "ec"],
     createdAt: "2026-01-10T00:00:00Z",
+  },
+];
+
+export const mockMeetings: Meeting[] = [
+  {
+    id: "mt1",
+    title: "Term 8 Kickoff Meeting",
+    agenda: "Discuss term goals, assign portfolios, and plan the Annual Programming Contest.",
+    scheduledAt: "2026-05-02T15:00:00Z",
+    venue: "CSEDU Seminar Room",
+    status: "upcoming",
+    calledBy: "PRESIDENT",
+    attendanceRecords: [],
+  },
+  {
+    id: "mt2",
+    title: "Election Preparation Review",
+    agenda: "Review candidate registrations, confirm election commission, and finalize Phase 1 schedule.",
+    scheduledAt: "2026-04-20T14:00:00Z",
+    venue: "Room 301, CSEDU Building",
+    status: "completed",
+    calledBy: "SECRETARY",
+    minutesUrl: "#",
+    attendanceRecords: [
+      { memberId: "m1", memberName: "Jannatul Ferdousi", present: true },
+      { memberId: "m2", memberName: "Md Saif Mahamud", present: true },
+      { memberId: "m3", memberName: "Rezaunnabi Ruhan", present: false },
+    ],
+  },
+  {
+    id: "mt3",
+    title: "Budget Approval Session",
+    agenda: "Approve event budgets for Q2 and review Q1 expenditure report.",
+    scheduledAt: "2026-04-10T16:00:00Z",
+    venue: "Online (Google Meet)",
+    status: "completed",
+    calledBy: "PRESIDENT",
+    minutesUrl: "#",
+    attendanceRecords: [
+      { memberId: "m1", memberName: "Jannatul Ferdousi", present: true },
+      { memberId: "m2", memberName: "Md Saif Mahamud", present: false },
+      { memberId: "m3", memberName: "Rezaunnabi Ruhan", present: true },
+    ],
   },
 ];
 

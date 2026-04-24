@@ -34,3 +34,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+Ravenclaw_04_26_41_60.pdf
+*.pdf

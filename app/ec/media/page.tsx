@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Image, Upload, X, ZoomIn, FileText, Tag, Trash2 } from "lucide-react";
@@ -29,10 +29,11 @@ export default function EcMediaPage() {
   const [tagInput, setTagInput] = useState("");
   const [filterTag, setFilterTag] = useState("");
 
-  if (!user || !isEcOfficer(user.role)) {
-    router.push("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (!user || !isEcOfficer(user.role)) router.push("/dashboard");
+  }, [user, router]);
+
+  if (!user || !isEcOfficer(user.role)) return null;
 
   const allTags = Array.from(new Set(items.flatMap((m) => m.tags ?? [])));
   const filtered = filterTag ? items.filter((m) => m.tags?.includes(filterTag)) : items;

@@ -1,8 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { DollarSign, Plus, CheckCircle, FileText, TrendingDown } from "lucide-react";
+import { DollarSign, Plus, CheckCircle, FileText, TrendingDown, Download } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -14,6 +14,7 @@ import { useAuthContext } from "@/app/providers";
 import { mockBudgets, mockExpenditures, mockEvents } from "@/lib/mockData";
 import { isEcOfficer } from "@/lib/auth";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
+import { exportToCSV, exportToExcel, exportToPDF } from "@/lib/export";
 import { Budget, Expenditure } from "@/types";
 
 export default function EcFinancePage() {
@@ -30,10 +31,11 @@ export default function EcFinancePage() {
   const [bForm, setBForm] = useState({ totalAmountBdt: "", eventId: "", notes: "" });
   const [eForm, setEForm] = useState({ budgetId: "", amountBdt: "", category: "", description: "", expenseDate: "" });
 
-  if (!user || !isEcOfficer(user.role)) {
-    router.push("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (!user || !isEcOfficer(user.role)) router.push("/dashboard");
+  }, [user, router]);
+
+  if (!user || !isEcOfficer(user.role)) return null;
 
   const canApprove = can("PRESIDENT") || can("SECRETARY");
 
@@ -104,6 +106,35 @@ export default function EcFinancePage() {
                 </h1>
               </div>
               <div className="flex gap-2">
+                <div className="flex gap-1 border-r border-slate-200 pr-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<Download className="w-4 h-4" />}
+                    onClick={() => exportToCSV(expenditures, budgets, `expenditure-report-${new Date().toISOString().split("T")[0]}.csv`)}
+                    title="Download as CSV"
+                  >
+                    CSV
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<Download className="w-4 h-4" />}
+                    onClick={() => exportToExcel(expenditures, budgets, `expenditure-report-${new Date().toISOString().split("T")[0]}.xlsx`)}
+                    title="Download as Excel"
+                  >
+                    Excel
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<Download className="w-4 h-4" />}
+                    onClick={() => exportToPDF(expenditures, budgets, totalSpent, `expenditure-report-${new Date().toISOString().split("T")[0]}.pdf`)}
+                    title="Download as PDF"
+                  >
+                    PDF
+                  </Button>
+                </div>
                 <Button variant="ghost" leftIcon={<TrendingDown className="w-4 h-4" />} onClick={() => setExpenseModalOpen(true)} size="sm">
                   Log Expense
                 </Button>

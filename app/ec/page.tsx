@@ -1,12 +1,12 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Users, Vote, DollarSign, Image, ArrowRight, Activity } from "lucide-react";
+import { Users, Vote, DollarSign, Image, ArrowRight, Activity, CalendarDays } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useAuthContext, useLang } from "@/app/providers";
-import { mockStats, mockMembers } from "@/lib/mockData";
+import { mockStats, mockMembers, mockMeetings } from "@/lib/mockData";
 import { isEcOfficer } from "@/lib/auth";
 
 const modules = [
@@ -35,6 +35,14 @@ const modules = [
     stat: "3 budgets",
   },
   {
+    href: "/ec/meetings",
+    icon: <CalendarDays className="w-6 h-6" />,
+    title: "Meeting Scheduler",
+    desc: "Schedule meetings and capture attendance.",
+    color: "bg-indigo-50 text-indigo-600",
+    stat: `${mockMeetings.filter((m) => m.status === "upcoming").length} upcoming`,
+  },
+  {
     href: "/ec/media",
     icon: <Image className="w-6 h-6" />,
     title: "Media & Gallery",
@@ -49,10 +57,11 @@ export default function EcPanelPage() {
   const { t } = useLang();
   const router = useRouter();
 
-  if (!user || !isEcOfficer(user.role)) {
-    router.push("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (!user || !isEcOfficer(user.role)) router.push("/dashboard");
+  }, [user, router]);
+
+  if (!user || !isEcOfficer(user.role)) return null;
 
   return (
     <PageLayout>
