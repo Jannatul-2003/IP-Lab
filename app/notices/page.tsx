@@ -1,11 +1,35 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { PageLayout, PageHeader } from "@/components/layout/PageLayout";
-import { useLang } from "@/app/providers";
+import { Button } from "@/components/ui/Button";
+import { FormField, Input } from "@/components/ui/FormField";
+import { useAuthContext, useLang } from "@/app/providers";
+import { useToast } from "@/components/ui/Toaster";
 import { mockNotices } from "@/lib/mockData";
 import { formatDate, timeAgo, cn } from "@/lib/utils";
-import { NoticeType } from "@/types";
+import { Notice, NoticeType, UserRole } from "@/types";
+
+const STORAGE_KEY = "csedusc_notices_custom";
+const ALLOWED_NOTICE_ROLES: UserRole[] = ["EC_OFFICER", "PRESIDENT", "SYSTEM_ADMIN"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ACCEPTED_FILE_TYPES = [
+  "application/pdf",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/csv",
+];
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.readAsDataURL(file);
+  });
+}
 
 const typeColors: Record<NoticeType, string> = {
   Election: "bg-purple-100 text-purple-700 border-purple-200",
@@ -24,9 +48,17 @@ const typeEmoji: Record<NoticeType, string> = {
 };
 
 export default function NoticesPage() {
+  const { user } = useAuthContext();
   const { t } = useLang();
+  const toast = useToast();
   const [filter, setFilter] = useState<"all" | NoticeType>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [notices, setNotices] = useState<Notice[]>(mockNotices);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [noticeType, setNoticeType] = useState<NoticeType>("General");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
   const typeFilters: { value: "all" | NoticeType; label: string }[] = [
     { value: "all", label: t("notices.filters.all") },
     { value: "General", label: t("notices.types.General") },
@@ -36,7 +68,94 @@ export default function NoticesPage() {
     { value: "Event", label: t("notices.types.Event") },
   ];
 
-  const filtered = filter === "all" ? mockNotices : mockNotices.filter((n) => n.noticeType === filter);
+  const canPublish = !!user && ALLOWED_NOTICE_ROLES.includes(user.role);
+  const readableRole = (role: string | undefined) =>
+    role ? role.replaceAll("_", " ") : "SYSTEM";
+
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const storedNotices = JSON.parse(raw) as Notice[];
+      if (Array.isArray(storedNotices)) {
+        setNotices([...storedNotices, ...mockNotices]);
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []);
+
+  const filtered = useMemo(
+    () => (filter === "all" ? notices : notices.filter((n) => n.noticeType === filter)),
+    [filter, notices]
+  );
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+      toast.error("Unsupported file type. Upload PDF, Excel, Word, or CSV.");
+      e.currentTarget.value = "";
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File is too large. Max size is 10MB.");
+      e.currentTarget.value = "";
+      return;
+    }
+    setSelectedFile(file);
+  }
+
+  async function handlePublish(e: React.FormEvent) {
+    e.preventDefault();
+    if (!canPublish) {
+      toast.error("Only EC, President, and Admin can publish notices.");
+      return;
+    }
+    if (!title.trim() || !content.trim()) {
+      toast.error("Title and details are required.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let attachment: Notice["attachment"] | undefined;
+      if (selectedFile) {
+        const dataUrl = await fileToDataUrl(selectedFile);
+        attachment = {
+          name: selectedFile.name,
+          url: dataUrl,
+          mimeType: selectedFile.type,
+          size: selectedFile.size,
+        };
+      }
+
+      const newNotice: Notice = {
+        id: `user-${Date.now()}`,
+        title: title.trim(),
+        content: content.trim(),
+        noticeType,
+        authorRole: user?.role,
+        authorId: user?.id,
+        publishedAt: new Date().toISOString(),
+        attachment,
+      };
+
+      const nextCustom = [newNotice, ...notices.filter((n) => n.id.startsWith("user-"))];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextCustom));
+      setNotices((prev) => [newNotice, ...prev]);
+
+      setTitle("");
+      setContent("");
+      setNoticeType("General");
+      setSelectedFile(null);
+      toast.success("Notice published successfully.");
+    } catch {
+      toast.error("Could not process the attachment. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <PageLayout>
@@ -44,6 +163,64 @@ export default function NoticesPage() {
 
       <section className="py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {canPublish && (
+            <motion.form
+              onSubmit={handlePublish}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white border border-slate-100 rounded-xl p-5 sm:p-6 shadow-card mb-8 space-y-4"
+            >
+              <h2 className="font-heading text-xl text-primary font-semibold">Publish Notice</h2>
+              <p className="text-sm text-gray-400">You can attach PDF, Excel, Word, or CSV files (max 10MB).</p>
+
+              <FormField label="Title" required>
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Notice title" />
+              </FormField>
+
+              <FormField label="Type" required>
+                <select
+                  value={noticeType}
+                  onChange={(e) => setNoticeType(e.target.value as NoticeType)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-primary outline-none transition-all duration-200 focus:ring-2 focus:ring-accent/20 focus:border-accent"
+                >
+                  {typeFilters
+                    .filter((f) => f.value !== "all")
+                    .map((f) => (
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
+                    ))}
+                </select>
+              </FormField>
+
+              <FormField label="Details" required>
+                <textarea
+                  rows={4}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Write the notice details..."
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-primary placeholder:text-gray-300 outline-none transition-all duration-200 focus:ring-2 focus:ring-accent/20 focus:border-accent resize-y min-h-[110px]"
+                />
+              </FormField>
+
+              <FormField label="Attachment (optional)">
+                <input
+                  type="file"
+                  accept=".pdf,.xls,.xlsx,.doc,.docx,.csv"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-accent/10 file:px-4 file:py-2 file:text-accent file:font-medium hover:file:bg-accent/20"
+                />
+                {selectedFile && <p className="text-xs text-gray-400 mt-2">Selected: {selectedFile.name}</p>}
+              </FormField>
+
+              <div className="flex justify-end">
+                <Button type="submit" isLoading={saving} disabled={saving}>
+                  Publish Notice
+                </Button>
+              </div>
+            </motion.form>
+          )}
+
           {/* Filter chips */}
           <div className="flex items-center gap-2 flex-wrap mb-8">
             {typeFilters.map((f) => (
@@ -99,7 +276,7 @@ export default function NoticesPage() {
                             <span className={cn("badge border", colorClass)}>{t(`notices.types.${notice.noticeType}`)}</span>
                             <span className="text-xs text-gray-400">{timeAgo(notice.publishedAt)}</span>
                             {notice.authorRole && (
-                              <span className="text-xs text-gray-400">· {t("notices.by")} {notice.authorRole}</span>
+                              <span className="text-xs text-gray-400">· {t("notices.by")} {readableRole(notice.authorRole)}</span>
                             )}
                           </div>
                           <h3 className="font-heading font-semibold text-primary text-lg leading-snug">{notice.title}</h3>
@@ -119,7 +296,17 @@ export default function NoticesPage() {
                       className="overflow-hidden"
                     >
                       <div className="px-5 pb-5 pl-[72px] text-gray-500 leading-relaxed text-sm border-t border-slate-50 pt-4">
-                        {notice.content}
+                        <p>{notice.content}</p>
+                        {notice.attachment && (
+                          <a
+                            href={notice.attachment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex mt-3 text-sm text-accent hover:underline font-medium"
+                          >
+                            Open attachment: {notice.attachment.name}
+                          </a>
+                        )}
                       </div>
                     </motion.div>
                   </motion.div>

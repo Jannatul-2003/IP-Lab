@@ -142,6 +142,12 @@ export interface Notice {
   authorId?: string;
   authorRole?: string;
   publishedAt: string;
+  attachment?: {
+    name: string;
+    url: string;
+    mimeType: string;
+    size: number;
+  };
 }
 
 export interface Budget {
