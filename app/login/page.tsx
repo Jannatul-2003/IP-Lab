@@ -33,9 +33,9 @@ export default function LoginPage() {
 
   function validate() {
     const errs: Record<string, string> = {};
-    if (!email) errs.email = "Email is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = "Enter a valid email.";
-    if (!password) errs.password = "Password is required.";
+    if (!email) errs.email = t("auth.errors.emailRequired");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = t("auth.errors.emailInvalid");
+    if (!password) errs.password = t("auth.errors.passwordRequired");
     return errs;
   }
 
@@ -51,13 +51,13 @@ export default function LoginPage() {
     const found = MOCK_USERS[email.toLowerCase()];
     if (!found || found.password !== password) {
       setLoading(false);
-      setErrors({ password: "Invalid email or password." });
+      setErrors({ password: t("auth.errors.invalidCredentials") });
       return;
     }
 
     setStoredUser(found.user, "mock-jwt-token");
     setUser(found.user);
-    toast.success("Welcome back!");
+    toast.success(t("auth.loginWelcome"));
     setLoading(false);
 
     if (found.user.role === "FACULTY_ADVISOR") router.push("/advisor");
@@ -84,7 +84,7 @@ export default function LoginPage() {
 
           {/* Demo hint */}
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-6 text-xs text-blue-600 space-y-0.5">
-            <p className="font-semibold mb-1">Demo accounts:</p>
+            <p className="font-semibold mb-1">{t("auth.demoAccounts")}</p>
             <p>member@du.ac.bd / member123</p>
             <p>ec@du.ac.bd / ec123</p>
             <p>president@du.ac.bd / pres123</p>
@@ -114,7 +114,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   className="pr-11"
                 />
-                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label={showPw ? "Hide password" : "Show password"}>
+                <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label={showPw ? t("auth.hidePassword") : t("auth.showPassword")}>
                   {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
@@ -132,7 +132,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-white/40 text-xs mt-6">
-          <Link href="/" className="hover:text-white/70 transition-colors">← Back to Home</Link>
+          <Link href="/" className="hover:text-white/70 transition-colors">← {t("auth.backHome")}</Link>
         </p>
       </motion.div>
     </div>

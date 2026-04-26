@@ -38,16 +38,16 @@ export default function RegisterPage() {
 
   function validate() {
     const errs: Partial<Record<keyof FormData, string>> = {};
-    if (!form.fullName.trim()) errs.fullName = "Full name is required.";
-    if (!form.studentId.trim()) errs.studentId = "Student ID is required.";
-    if (!form.email.trim()) errs.email = "Email is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Enter a valid email.";
-    if (!form.batchYear) errs.batchYear = "Batch year is required.";
-    else if (Number(form.batchYear) < 2000 || Number(form.batchYear) > 2026) errs.batchYear = "Enter a valid batch year.";
-    if (!form.password) errs.password = "Password is required.";
-    else if (form.password.length < 8) errs.password = "Minimum 8 characters.";
-    if (form.confirmPassword !== form.password) errs.confirmPassword = "Passwords do not match.";
-    if (!form.constitutionAck) errs.constitutionAck = "You must acknowledge the constitution.";
+    if (!form.fullName.trim()) errs.fullName = t("auth.errors.fullNameRequired");
+    if (!form.studentId.trim()) errs.studentId = t("auth.errors.studentIdRequired");
+    if (!form.email.trim()) errs.email = t("auth.errors.emailRequired");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = t("auth.errors.emailInvalid");
+    if (!form.batchYear) errs.batchYear = t("auth.errors.batchYearRequired");
+    else if (Number(form.batchYear) < 2000 || Number(form.batchYear) > 2026) errs.batchYear = t("auth.errors.batchYearInvalid");
+    if (!form.password) errs.password = t("auth.errors.passwordRequired");
+    else if (form.password.length < 8) errs.password = t("auth.errors.passwordMin");
+    if (form.confirmPassword !== form.password) errs.confirmPassword = t("auth.errors.passwordMismatch");
+    if (!form.constitutionAck) errs.constitutionAck = t("auth.errors.constitutionRequired");
     return errs;
   }
 
@@ -60,7 +60,7 @@ export default function RegisterPage() {
     await new Promise((r) => setTimeout(r, 1000));
     setLoading(false);
     setDone(true);
-    toast.success("Application submitted! You'll receive an email once approved.");
+    toast.success(t("auth.registerToast"));
   }
 
   if (done) {
@@ -70,11 +70,11 @@ export default function RegisterPage() {
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-green-500" />
           </div>
-          <h1 className="font-heading text-2xl font-bold text-primary mb-3">Application Submitted!</h1>
-          <p className="text-gray-400 mb-6 text-sm leading-relaxed">Your membership application has been submitted. An EC officer will review it and you will be notified via email.</p>
+          <h1 className="font-heading text-2xl font-bold text-primary mb-3">{t("auth.registerSuccessTitle")}</h1>
+          <p className="text-gray-400 mb-6 text-sm leading-relaxed">{t("auth.registerSuccessText")}</p>
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => router.push("/")}>Go Home</Button>
-            <Button className="flex-1" onClick={() => router.push("/login")}>Sign In</Button>
+            <Button variant="outline" className="flex-1" onClick={() => router.push("/")}>{t("auth.goHome")}</Button>
+            <Button className="flex-1" onClick={() => router.push("/login")}>{t("auth.signIn")}</Button>
           </div>
         </motion.div>
       </div>
@@ -117,11 +117,11 @@ export default function RegisterPage() {
             </FormField>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Password" error={errors.password} required>
-                <Input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min. 8 chars" error={!!errors.password} />
+              <FormField label={t("auth.password")} error={errors.password} required>
+                <Input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder={t("auth.minChars")} error={!!errors.password} />
               </FormField>
-              <FormField label="Confirm Password" error={errors.confirmPassword} required>
-                <Input type="password" value={form.confirmPassword} onChange={(e) => set("confirmPassword", e.target.value)} placeholder="Re-enter" error={!!errors.confirmPassword} />
+              <FormField label={t("auth.passwordConfirm")} error={errors.confirmPassword} required>
+                <Input type="password" value={form.confirmPassword} onChange={(e) => set("confirmPassword", e.target.value)} placeholder={t("auth.reEnter")} error={!!errors.confirmPassword} />
               </FormField>
             </div>
 
@@ -151,7 +151,7 @@ export default function RegisterPage() {
           </p>
         </div>
         <p className="text-center text-white/40 text-xs mt-6">
-          <Link href="/" className="hover:text-white/70 transition-colors">← Back to Home</Link>
+          <Link href="/" className="hover:text-white/70 transition-colors">← {t("auth.backHome")}</Link>
         </p>
       </motion.div>
     </div>

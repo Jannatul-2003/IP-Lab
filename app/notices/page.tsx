@@ -23,19 +23,18 @@ const typeEmoji: Record<NoticeType, string> = {
   General: "📢",
 };
 
-const typeFilters: { value: "all" | NoticeType; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "General", label: "General" },
-  { value: "Election", label: "Election" },
-  { value: "Policy", label: "Policy" },
-  { value: "Membership", label: "Membership" },
-  { value: "Event", label: "Event" },
-];
-
 export default function NoticesPage() {
   const { t } = useLang();
   const [filter, setFilter] = useState<"all" | NoticeType>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const typeFilters: { value: "all" | NoticeType; label: string }[] = [
+    { value: "all", label: t("notices.filters.all") },
+    { value: "General", label: t("notices.types.General") },
+    { value: "Election", label: t("notices.types.Election") },
+    { value: "Policy", label: t("notices.types.Policy") },
+    { value: "Membership", label: t("notices.types.Membership") },
+    { value: "Event", label: t("notices.types.Event") },
+  ];
 
   const filtered = filter === "all" ? mockNotices : mockNotices.filter((n) => n.noticeType === filter);
 
@@ -97,10 +96,10 @@ export default function NoticesPage() {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className={cn("badge border", colorClass)}>{notice.noticeType}</span>
+                            <span className={cn("badge border", colorClass)}>{t(`notices.types.${notice.noticeType}`)}</span>
                             <span className="text-xs text-gray-400">{timeAgo(notice.publishedAt)}</span>
                             {notice.authorRole && (
-                              <span className="text-xs text-gray-400">· by {notice.authorRole}</span>
+                              <span className="text-xs text-gray-400">· {t("notices.by")} {notice.authorRole}</span>
                             )}
                           </div>
                           <h3 className="font-heading font-semibold text-primary text-lg leading-snug">{notice.title}</h3>

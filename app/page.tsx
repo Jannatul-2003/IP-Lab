@@ -87,13 +87,14 @@ function HeroSection() {
 }
 
 function FeaturesSection() {
+  const { t } = useLang();
   const features = [
-    { icon: <Calendar className="w-6 h-6 text-accent" />, title: "Events & Workshops", desc: "Programming contests, tech talks, workshops, and sports — all in one place." },
-    { icon: <Trophy className="w-6 h-6 text-accent" />, title: "Democratic Elections", desc: "Constitutional two-phase elections for every Executive Committee position." },
-    { icon: <Users className="w-6 h-6 text-accent" />, title: "Vibrant Community", desc: "Connect with 300+ active members across all CSE batches at University of Dhaka." },
-    { icon: <BookOpen className="w-6 h-6 text-accent" />, title: "Official Notices", desc: "Stay informed with timely announcements from the Executive Committee." },
-    { icon: <Zap className="w-6 h-6 text-accent" />, title: "Volunteer Roles", desc: "Lead events as a club volunteer. Build skills. Make an impact." },
-    { icon: <Shield className="w-6 h-6 text-accent" />, title: "Transparent Finance", desc: "Immutable financial records. Full accountability to every member." },
+    { icon: <Calendar className="w-6 h-6 text-accent" />, title: t("home.features.items.events.title"), desc: t("home.features.items.events.desc") },
+    { icon: <Trophy className="w-6 h-6 text-accent" />, title: t("home.features.items.elections.title"), desc: t("home.features.items.elections.desc") },
+    { icon: <Users className="w-6 h-6 text-accent" />, title: t("home.features.items.community.title"), desc: t("home.features.items.community.desc") },
+    { icon: <BookOpen className="w-6 h-6 text-accent" />, title: t("home.features.items.notices.title"), desc: t("home.features.items.notices.desc") },
+    { icon: <Zap className="w-6 h-6 text-accent" />, title: t("home.features.items.volunteer.title"), desc: t("home.features.items.volunteer.desc") },
+    { icon: <Shield className="w-6 h-6 text-accent" />, title: t("home.features.items.finance.title"), desc: t("home.features.items.finance.desc") },
   ];
 
   return (
@@ -101,9 +102,9 @@ function FeaturesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <FadeInSection>
           <div className="text-center mb-16">
-            <span className="badge bg-surface text-accent mb-4 inline-block">Why CSEDUSC?</span>
-            <h2 className="font-heading text-4xl md:text-5xl font-bold text-primary">Everything in One Portal</h2>
-            <p className="text-gray-500 text-lg mt-3 max-w-xl mx-auto">Managed transparently, built for CSEDU students.</p>
+            <span className="badge bg-surface text-accent mb-4 inline-block">{t("home.features.badge")}</span>
+            <h2 className="font-heading text-4xl md:text-5xl font-bold text-primary">{t("home.features.title")}</h2>
+            <p className="text-gray-500 text-lg mt-3 max-w-xl mx-auto">{t("home.features.subtitle")}</p>
           </div>
         </FadeInSection>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -132,11 +133,11 @@ function EventsPreview() {
         <FadeInSection>
           <div className="flex items-end justify-between mb-12">
             <div>
-              <span className="badge bg-accent/10 text-accent mb-3 inline-block">Upcoming</span>
+              <span className="badge bg-accent/10 text-accent mb-3 inline-block">{t("home.previews.upcoming")}</span>
               <h2 className="font-heading text-4xl font-bold text-primary">{t("events.title")}</h2>
             </div>
             <Link href="/events" className="text-sm text-accent hover:text-primary font-medium flex items-center gap-1 transition-colors">
-              View all <ArrowRight className="w-4 h-4" />
+              {t("home.previews.viewAll")} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </FadeInSection>
@@ -183,11 +184,11 @@ function NoticesPreview() {
         <FadeInSection>
           <div className="flex items-end justify-between mb-12">
             <div>
-              <span className="badge bg-surface text-accent mb-3 inline-block">Official</span>
+              <span className="badge bg-surface text-accent mb-3 inline-block">{t("home.previews.official")}</span>
               <h2 className="font-heading text-4xl font-bold text-primary">{t("notices.title")}</h2>
             </div>
             <Link href="/notices" className="text-sm text-accent hover:text-primary font-medium flex items-center gap-1 transition-colors">
-              All notices <ArrowRight className="w-4 h-4" />
+              {t("home.previews.allNotices")} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </FadeInSection>
@@ -225,14 +226,14 @@ function CtaSection() {
       <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `radial-gradient(circle at 25px 25px, rgba(255,255,255,0.3) 2px, transparent 0)`, backgroundSize: "50px 50px" }} />
       <div className="relative max-w-3xl mx-auto px-4 text-center">
         <FadeInSection>
-          <h2 className="font-heading text-4xl md:text-5xl font-bold text-white mb-6">Ready to be part of something great?</h2>
-          <p className="text-lg text-white/55 mb-10 leading-relaxed">Join the CSEDU Students&apos; Club and connect with the brightest minds in computer science at the University of Dhaka.</p>
+          <h2 className="font-heading text-4xl md:text-5xl font-bold text-white mb-6">{t("home.cta.title")}</h2>
+          <p className="text-lg text-white/55 mb-10 leading-relaxed">{t("home.cta.subtitle")}</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/register">
               <Button size="lg" className="bg-white text-primary hover:bg-white/90 px-8 shadow-2xl" rightIcon={<ArrowRight className="w-5 h-5" />}>{t("auth.register")}</Button>
             </Link>
             <Link href="/about">
-              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10 px-8">Learn More</Button>
+              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10 px-8">{t("home.cta.learnMore")}</Button>
             </Link>
           </div>
         </FadeInSection>

@@ -46,6 +46,99 @@ const en = {
     values: "Core Values",
     ec: "Executive Committee",
     constitution: "Club Constitution",
+    coreValues: {
+      integrity: {
+        title: "Integrity",
+        desc: "Transparent governance and immutable financial records build member trust.",
+      },
+      transparency: {
+        title: "Transparency",
+        desc: "Every decision, election, and financial record is open to all members.",
+      },
+      inclusivity: {
+        title: "Inclusivity",
+        desc: "WCAG-compliant, bilingual portal welcoming students from every batch.",
+      },
+      excellence: {
+        title: "Excellence",
+        desc: "We push academic and extracurricular boundaries together.",
+      },
+      community: {
+        title: "Community",
+        desc: "A family of 300+ members united by a love for computer science.",
+      },
+      innovation: {
+        title: "Innovation",
+        desc: "From hackathons to workshops, we foster creative problem-solving.",
+      },
+    },
+    history: {
+      title: "Established in 1992",
+      text:
+        "For over three decades, the CSEDU Students' Club has been the heartbeat of student life in the Department of Computer Science and Engineering, University of Dhaka - organizing events, conducting elections, and fostering a community of future tech leaders.",
+      yearsActive: "Years Active",
+      ecTerms: "EC Terms",
+      ecPositions: "EC Positions",
+    },
+    ecTerm: "Term 8 - 2026",
+    roles: {
+      president: "President",
+      generalSecretary: "General Secretary",
+      treasurer: "Treasurer",
+      culturalSecretary: "Cultural Secretary",
+      sportsSecretary: "Sports Secretary",
+      publicationSecretary: "Publication Secretary",
+      itSecretary: "IT Secretary",
+      socialServiceSecretary: "Social Service Secretary",
+      officeSecretary: "Office Secretary",
+      executiveMember: "Executive Member",
+    },
+    tbdTerm: "TBD - Term 8",
+  },
+  home: {
+    features: {
+      badge: "Why CSEDUSC?",
+      title: "Everything in One Portal",
+      subtitle: "Managed transparently, built for CSEDU students.",
+      items: {
+        events: {
+          title: "Events & Workshops",
+          desc: "Programming contests, tech talks, workshops, and sports - all in one place.",
+        },
+        elections: {
+          title: "Democratic Elections",
+          desc: "Constitutional two-phase elections for every Executive Committee position.",
+        },
+        community: {
+          title: "Vibrant Community",
+          desc: "Connect with 300+ active members across all CSE batches at University of Dhaka.",
+        },
+        notices: {
+          title: "Official Notices",
+          desc: "Stay informed with timely announcements from the Executive Committee.",
+        },
+        volunteer: {
+          title: "Volunteer Roles",
+          desc: "Lead events as a club volunteer. Build skills. Make an impact.",
+        },
+        finance: {
+          title: "Transparent Finance",
+          desc: "Immutable financial records. Full accountability to every member.",
+        },
+      },
+    },
+    previews: {
+      upcoming: "Upcoming",
+      official: "Official",
+      viewAll: "View all",
+      allNotices: "All notices",
+    },
+    cta: {
+      title: "Ready to be part of something great?",
+      subtitle:
+        "Join the CSEDU Students' Club and connect with the brightest minds in computer science at the University of Dhaka.",
+      learnMore: "Learn More",
+    },
   },
   events: {
     title: "Upcoming Events",
@@ -57,6 +150,21 @@ const en = {
     venue: "Venue",
     date: "Date",
     details: "View Details",
+    full: "Full",
+    percentFull: "% full",
+    backToEvents: "Back to Events",
+    dateTime: "Date & Time",
+    aboutEvent: "About this Event",
+    rsvpDeadline: "RSVP Deadline",
+    fullCapacity: "This event is at full capacity.",
+    signInToRsvp: "Sign in to RSVP",
+    toRsvp: "to RSVP",
+    registerSuccess: "You're registered for this event!",
+    cancelSuccess: "RSVP cancelled.",
+    cancelConfirmTitle: "Cancel RSVP?",
+    cancelConfirmMessage:
+      "Are you sure you want to cancel your registration for this event? This action cannot be undone.",
+    cancelConfirmButton: "Yes, Cancel",
     noEvents: "No upcoming events at this time.",
     filter: {
       all: "All",
@@ -76,6 +184,10 @@ const en = {
     title: "Notices",
     subtitle: "Official announcements from the Executive Committee.",
     noNotices: "No notices at this time.",
+    by: "by",
+    filters: {
+      all: "All",
+    },
     types: {
       General: "General",
       Policy: "Policy",
@@ -102,6 +214,44 @@ const en = {
     submit: "Submit Application",
     alreadyMember: "Already a member?",
     signIn: "Sign in",
+    passwordConfirm: "Confirm Password",
+    minChars: "Min. 8 chars",
+    reEnter: "Re-enter",
+    backHome: "Back to Home",
+    goHome: "Go Home",
+    registerSuccessTitle: "Application Submitted!",
+    registerSuccessText:
+      "Your membership application has been submitted. An EC officer will review it and you will be notified via email.",
+    registerToast: "Application submitted! You'll receive an email once approved.",
+    loginWelcome: "Welcome back!",
+    demoAccounts: "Demo accounts:",
+    hidePassword: "Hide password",
+    showPassword: "Show password",
+    errors: {
+      fullNameRequired: "Full name is required.",
+      studentIdRequired: "Student ID is required.",
+      emailRequired: "Email is required.",
+      emailInvalid: "Enter a valid email.",
+      batchYearRequired: "Batch year is required.",
+      batchYearInvalid: "Enter a valid batch year.",
+      passwordRequired: "Password is required.",
+      passwordMin: "Minimum 8 characters.",
+      passwordMismatch: "Passwords do not match.",
+      constitutionRequired: "You must acknowledge the constitution.",
+      invalidCredentials: "Invalid email or password.",
+    },
+  },
+  profile: {
+    updateSuccess: "Profile updated successfully.",
+    memberInfo: "Member Information",
+    studentId: "Student ID",
+    batchYear: "Batch Year",
+    memberSince: "Member Since",
+    status: "Status",
+    pending: "Pending",
+    immutableField: "Immutable field",
+    editProfile: "Edit Profile",
+    phoneHint: "Contact number for EC communications",
   },
   dashboard: {
     title: "Dashboard",

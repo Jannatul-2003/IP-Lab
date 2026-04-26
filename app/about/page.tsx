@@ -15,31 +15,29 @@ function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   );
 }
 
-const ecMembers = [
-  { role: "President", name: "TBD – Term 8", icon: "👑" },
-  { role: "General Secretary", name: "TBD – Term 8", icon: "📋" },
-  { role: "Treasurer", name: "TBD – Term 8", icon: "💰" },
-  { role: "Cultural Secretary", name: "TBD – Term 8", icon: "🎭" },
-  { role: "Sports Secretary", name: "TBD – Term 8", icon: "⚽" },
-  { role: "Publication Secretary", name: "TBD – Term 8", icon: "📰" },
-  { role: "IT Secretary", name: "TBD – Term 8", icon: "💻" },
-  { role: "Social Service Secretary", name: "TBD – Term 8", icon: "🤝" },
-  { role: "Office Secretary", name: "TBD – Term 8", icon: "🗂" },
-  { role: "Executive Member", name: "TBD – Term 8", icon: "⭐" },
-  { role: "Executive Member", name: "TBD – Term 8", icon: "⭐" },
-];
-
-const values = [
-  { icon: <Shield className="w-6 h-6" />, title: "Integrity", desc: "Transparent governance and immutable financial records build member trust." },
-  { icon: <Eye className="w-6 h-6" />, title: "Transparency", desc: "Every decision, election, and financial record is open to all members." },
-  { icon: <Heart className="w-6 h-6" />, title: "Inclusivity", desc: "WCAG-compliant, bilingual portal welcoming students from every batch." },
-  { icon: <BookOpen className="w-6 h-6" />, title: "Excellence", desc: "We push academic and extracurricular boundaries together." },
-  { icon: <Users className="w-6 h-6" />, title: "Community", desc: "A family of 300+ members united by a love for computer science." },
-  { icon: <Star className="w-6 h-6" />, title: "Innovation", desc: "From hackathons to workshops, we foster creative problem-solving." },
-];
-
 export default function AboutPage() {
   const { t } = useLang();
+  const ecMembers = [
+    { role: t("about.roles.president"), name: t("about.tbdTerm"), icon: "👑" },
+    { role: t("about.roles.generalSecretary"), name: t("about.tbdTerm"), icon: "📋" },
+    { role: t("about.roles.treasurer"), name: t("about.tbdTerm"), icon: "💰" },
+    { role: t("about.roles.culturalSecretary"), name: t("about.tbdTerm"), icon: "🎭" },
+    { role: t("about.roles.sportsSecretary"), name: t("about.tbdTerm"), icon: "⚽" },
+    { role: t("about.roles.publicationSecretary"), name: t("about.tbdTerm"), icon: "📰" },
+    { role: t("about.roles.itSecretary"), name: t("about.tbdTerm"), icon: "💻" },
+    { role: t("about.roles.socialServiceSecretary"), name: t("about.tbdTerm"), icon: "🤝" },
+    { role: t("about.roles.officeSecretary"), name: t("about.tbdTerm"), icon: "🗂" },
+    { role: t("about.roles.executiveMember"), name: t("about.tbdTerm"), icon: "⭐" },
+    { role: t("about.roles.executiveMember"), name: t("about.tbdTerm"), icon: "⭐" },
+  ];
+  const values = [
+    { icon: <Shield className="w-6 h-6" />, title: t("about.coreValues.integrity.title"), desc: t("about.coreValues.integrity.desc") },
+    { icon: <Eye className="w-6 h-6" />, title: t("about.coreValues.transparency.title"), desc: t("about.coreValues.transparency.desc") },
+    { icon: <Heart className="w-6 h-6" />, title: t("about.coreValues.inclusivity.title"), desc: t("about.coreValues.inclusivity.desc") },
+    { icon: <BookOpen className="w-6 h-6" />, title: t("about.coreValues.excellence.title"), desc: t("about.coreValues.excellence.desc") },
+    { icon: <Users className="w-6 h-6" />, title: t("about.coreValues.community.title"), desc: t("about.coreValues.community.desc") },
+    { icon: <Star className="w-6 h-6" />, title: t("about.coreValues.innovation.title"), desc: t("about.coreValues.innovation.desc") },
+  ];
 
   return (
     <PageLayout>
@@ -99,22 +97,22 @@ export default function AboutPage() {
       <section className="py-16 bg-hero text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <FadeIn>
-            <h2 className="font-heading text-3xl font-bold mb-4">Established in 1992</h2>
+            <h2 className="font-heading text-3xl font-bold mb-4">{t("about.history.title")}</h2>
             <p className="text-white/60 text-lg leading-relaxed max-w-2xl mx-auto">
-              For over three decades, the CSEDU Students&apos; Club has been the heartbeat of student life in the Department of Computer Science and Engineering, University of Dhaka — organizing events, conducting elections, and fostering a community of future tech leaders.
+              {t("about.history.text")}
             </p>
             <div className="grid grid-cols-3 gap-6 mt-10 max-w-lg mx-auto">
               <div className="text-center">
                 <div className="font-heading text-4xl font-black text-white">33</div>
-                <div className="text-white/40 text-sm mt-1">Years Active</div>
+                <div className="text-white/40 text-sm mt-1">{t("about.history.yearsActive")}</div>
               </div>
               <div className="text-center">
                 <div className="font-heading text-4xl font-black text-white">8</div>
-                <div className="text-white/40 text-sm mt-1">EC Terms</div>
+                <div className="text-white/40 text-sm mt-1">{t("about.history.ecTerms")}</div>
               </div>
               <div className="text-center">
                 <div className="font-heading text-4xl font-black text-white">11</div>
-                <div className="text-white/40 text-sm mt-1">EC Positions</div>
+                <div className="text-white/40 text-sm mt-1">{t("about.history.ecPositions")}</div>
               </div>
             </div>
           </FadeIn>
@@ -127,7 +125,7 @@ export default function AboutPage() {
           <FadeIn>
             <div className="text-center mb-14">
               <h2 className="font-heading text-4xl font-bold text-primary">{t("about.ec")}</h2>
-              <p className="text-gray-400 mt-3">Term 8 — 2026</p>
+              <p className="text-gray-400 mt-3">{t("about.ecTerm")}</p>
             </div>
           </FadeIn>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

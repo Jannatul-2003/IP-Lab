@@ -30,7 +30,7 @@ export default function ProfilePage() {
     setSaving(true);
     await new Promise((r) => setTimeout(r, 700));
     setSaving(false);
-    toast.success("Profile updated successfully.");
+    toast.success(t("profile.updateSuccess"));
   }
 
   return (
@@ -57,18 +57,18 @@ export default function ProfilePage() {
 
             {/* Info fields */}
             <div className="card">
-              <h2 className="font-heading text-lg font-semibold text-primary mb-5">Member Information</h2>
+              <h2 className="font-heading text-lg font-semibold text-primary mb-5">{t("profile.memberInfo")}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {[
-                  { label: "Student ID", value: member.studentId, locked: true },
-                  { label: "Batch Year", value: String(member.batchYear), locked: true },
-                  { label: "Member Since", value: member.joinedDate ? formatDate(member.joinedDate) : "Pending", locked: true },
-                  { label: "Status", value: member.status, locked: true },
+                  { label: t("profile.studentId"), value: member.studentId, locked: true },
+                  { label: t("profile.batchYear"), value: String(member.batchYear), locked: true },
+                  { label: t("profile.memberSince"), value: member.joinedDate ? formatDate(member.joinedDate) : t("profile.pending"), locked: true },
+                  { label: t("profile.status"), value: member.status, locked: true },
                 ].map((field) => (
                   <div key={field.label}>
                     <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{field.label}</p>
                     <p className="font-medium text-primary">{field.value}</p>
-                    {field.locked && <p className="text-xs text-gray-300 mt-0.5">Immutable field</p>}
+                    {field.locked && <p className="text-xs text-gray-300 mt-0.5">{t("profile.immutableField")}</p>}
                   </div>
                 ))}
               </div>
@@ -76,9 +76,9 @@ export default function ProfilePage() {
 
             {/* Editable fields */}
             <div className="card">
-              <h2 className="font-heading text-lg font-semibold text-primary mb-5">Edit Profile</h2>
+              <h2 className="font-heading text-lg font-semibold text-primary mb-5">{t("profile.editProfile")}</h2>
               <form onSubmit={handleSave} className="space-y-4">
-                <FormField label="Phone Number" hint="Contact number for EC communications">
+                <FormField label={t("auth.phone")} hint={t("profile.phoneHint")}>
                   <Input
                     type="tel"
                     value={phone}
