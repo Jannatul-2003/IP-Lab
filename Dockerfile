@@ -21,6 +21,9 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Set the hostname to localhost
+ENV PORT=8000
+ENV HOSTNAME="0.0.0.0"
 
 # Copy built application from builder
 COPY --from=builder /app/public ./public
@@ -30,8 +33,7 @@ COPY --from=builder /app/.next/static ./.next/static
 # Expose port
 EXPOSE 8000
 
-# Set the hostname to localhost
-ENV HOSTNAME="0.0.0.0"
+
 
 # Start the Next.js server
 CMD ["node", "server.js"]
