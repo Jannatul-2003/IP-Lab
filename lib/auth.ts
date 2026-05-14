@@ -11,13 +11,21 @@ export function getStoredUser(): User | null {
 }
 
 export function setStoredUser(user: User, token: string): void {
-  localStorage.setItem("user", JSON.stringify(user));
-  localStorage.setItem("access_token", token);
+  try {
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("access_token", token);
+  } catch {
+    // localStorage not accessible
+  }
 }
 
 export function clearAuth(): void {
-  localStorage.removeItem("user");
-  localStorage.removeItem("access_token");
+  try {
+    localStorage.removeItem("user");
+    localStorage.removeItem("access_token");
+  } catch {
+    // localStorage not accessible
+  }
 }
 
 const ROLE_LEVEL: Record<UserRole, number> = {

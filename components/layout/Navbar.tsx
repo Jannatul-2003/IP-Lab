@@ -57,15 +57,15 @@ export function Navbar() {
 
   return (
     <nav
-      className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300", bgClass)}
+      className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 overflow-x-hidden", bgClass)}
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-18">
+      <div className="px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 lg:h-18 min-w-0">
 
           {/* ── Logo — single CSEDU logo, properly sized ── */}
-          <Link href="/" className="flex items-center gap-2.5 group" aria-label="CSEDUSC Home">
+          <Link href="/" className="flex items-center gap-2.5 group min-w-0" aria-label="CSEDUSC Home">
             <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/30 flex-shrink-0 bg-white/10">
               <img
                 src="/images/csedu-logo.png"
@@ -74,15 +74,15 @@ export function Navbar() {
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
             </div>
-            <div className="leading-tight">
+            <div className="leading-tight min-w-0">
               <span className={cn(
-                "font-heading font-bold text-base block",
+                "font-heading font-bold text-base block truncate",
                 onDarkBg ? "text-white" : "text-primary dark:text-white"
               )}>
                 CSEDUSC
               </span>
               <span className={cn(
-                "text-xs block",
+                "text-xs block truncate",
                 onDarkBg ? "text-white/60" : "text-gray-400 dark:text-gray-500"
               )}>
                 Students&apos; Club
@@ -234,57 +234,57 @@ export function Navbar() {
             </button>
           </div>
         </div>
-      </div>
 
-      {/* ── Mobile Menu ── */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-white dark:bg-gray-900 border-t border-slate-100 dark:border-gray-700 shadow-lg overflow-hidden"
-          >
-            <div className="px-4 py-4 space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "block px-4 py-3 rounded-lg text-sm font-medium transition-colors",
-                    isActive(link.href)
-                      ? "bg-surface text-accent dark:bg-accent/20 dark:text-accent"
-                      : "text-gray-600 dark:text-gray-300 hover:bg-surface/50 dark:hover:bg-gray-800 hover:text-primary dark:hover:text-white"
+        {/* ── Mobile Menu ── */}
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="lg:hidden bg-white dark:bg-gray-900 border-t border-slate-100 dark:border-gray-700 shadow-lg overflow-hidden"
+            >
+              <div className="py-4 space-y-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      "block px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                      isActive(link.href)
+                        ? "bg-surface text-accent dark:bg-accent/20 dark:text-accent"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-surface/50 dark:hover:bg-gray-800 hover:text-primary dark:hover:text-white"
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <div className="border-t border-slate-100 dark:border-gray-700 pt-3 mt-3 space-y-2">
+                  <button
+                    onClick={toggle}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white"
+                  >
+                    <Globe className="w-4 h-4" />
+                    {lang === "en" ? "বাংলায় দেখুন" : "View in English"}
+                  </button>
+                  {user ? (
+                    <>
+                      <Link href="/dashboard" className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-surface/50 dark:hover:bg-gray-800 rounded-lg">{t("nav.dashboard")}</Link>
+                      <Link href="/profile" className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-surface/50 dark:hover:bg-gray-800 rounded-lg">{t("nav.profile")}</Link>
+                      <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">{t("nav.logout")}</button>
+                    </>
+                  ) : (
+                    <div className="flex flex-col gap-2 pt-1">
+                      <Link href="/login"><Button variant="outline" size="sm" className="w-full">{t("nav.login")}</Button></Link>
+                      <Link href="/register"><Button size="sm" className="w-full">{t("nav.register")}</Button></Link>
+                    </div>
                   )}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <div className="border-t border-slate-100 dark:border-gray-700 pt-3 mt-3 space-y-2">
-                <button
-                  onClick={toggle}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-white"
-                >
-                  <Globe className="w-4 h-4" />
-                  {lang === "en" ? "বাংলায় দেখুন" : "View in English"}
-                </button>
-                {user ? (
-                  <>
-                    <Link href="/dashboard" className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-surface/50 dark:hover:bg-gray-800 rounded-lg">{t("nav.dashboard")}</Link>
-                    <Link href="/profile" className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-surface/50 dark:hover:bg-gray-800 rounded-lg">{t("nav.profile")}</Link>
-                    <button onClick={handleLogout} className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">{t("nav.logout")}</button>
-                  </>
-                ) : (
-                  <div className="flex flex-col gap-2 pt-1">
-                    <Link href="/login"><Button variant="outline" size="sm" className="w-full">{t("nav.login")}</Button></Link>
-                    <Link href="/register"><Button size="sm" className="w-full">{t("nav.register")}</Button></Link>
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </nav>
   );
 }

@@ -22,9 +22,9 @@ function FadeInSection({ children, delay = 0 }: { children: React.ReactNode; del
 function HeroSection() {
   const { t } = useLang();
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+  const { scrollYProgress } = useScroll();
+  const y = useTransform(scrollYProgress, [0, 0.5], ["0%", "30%"]);
+  const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
 
   const stats = [
     { value: `${mockStats.totalMembers}+`, label: t("hero.stats.members"), icon: "👥" },
@@ -34,7 +34,7 @@ function HeroSection() {
   ];
 
   return (
-    <section ref={ref} className="relative min-h-screen flex flex-col items-center justify-center overflow-visible bg-hero pb-16">
+    <section ref={ref} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-hero pb-16">
       <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `linear-gradient(rgba(46,117,182,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(46,117,182,0.5) 1px, transparent 1px)`, backgroundSize: "60px 60px" }} />
       <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-accent/15 blur-3xl animate-pulse" />
       <div className="absolute bottom-1/4 right-1/3 w-72 h-72 rounded-full bg-primary/30 blur-3xl animate-pulse" style={{ animationDelay: "1.5s" }} />

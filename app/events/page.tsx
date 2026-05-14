@@ -126,7 +126,7 @@ function EventCard({
       </div>
 
       <Link href={`/events/${event.id}`}>
-        <h3 className="font-heading text-xl font-semibold text-primary mb-2 group-hover:text-accent transition-colors leading-snug">
+        <h3 className="font-heading text-xl font-semibold text-primary mb-2 dark:text-accent transition-colors leading-snug group-hover:text-sky-300">
           {event.title}
         </h3>
       </Link>

@@ -95,21 +95,29 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setUserState(stored);
     setIsLoading(false);
 
-    // Restore language preference
-    const storedLang = localStorage.getItem("csedusc_lang") as Language | null;
-    if (storedLang === "en" || storedLang === "bn") setLangState(storedLang);
+    try {
+      // Restore language preference
+      const storedLang = localStorage.getItem("csedusc_lang") as Language | null;
+      if (storedLang === "en" || storedLang === "bn") setLangState(storedLang);
 
-    // Restore theme preference
-    const storedTheme = localStorage.getItem("csedusc_theme") as Theme | null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const resolved = storedTheme ?? (prefersDark ? "dark" : "light");
-    setThemeState(resolved);
+      // Restore theme preference
+      const storedTheme = localStorage.getItem("csedusc_theme") as Theme | null;
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const resolved = storedTheme ?? (prefersDark ? "dark" : "light");
+      setThemeState(resolved);
+    } catch (e) {
+      // localStorage not accessible (sandboxed iframe, cross-origin, etc)
+    }
   }, []);
 
   // Apply dark class to <html> whenever theme changes
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("csedusc_theme", theme);
+    try {
+      localStorage.setItem("csedusc_theme", theme);
+    } catch {
+      // localStorage not accessible
+    }
   }, [theme]);
 
   // Apply lang attribute for correct font rendering
@@ -132,7 +140,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   function setLang(l: Language) {
     setLangState(l);
-    localStorage.setItem("csedusc_lang", l);
+    try {
+      localStorage.setItem("csedusc_lang", l);
+    } catch {
+      // localStorage not accessible
+    }
   }
 
   function toggle() { setLang(lang === "en" ? "bn" : "en"); }
