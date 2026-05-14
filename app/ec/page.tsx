@@ -9,49 +9,6 @@ import { useAuthContext, useLang } from "@/app/providers";
 import { mockStats, mockMembers, mockMeetings } from "@/lib/mockData";
 import { isEcOfficer } from "@/lib/auth";
 
-const modules = [
-  {
-    href: "/ec/members",
-    icon: <Users className="w-6 h-6" />,
-    title: "Member Management",
-    desc: "Review applications, manage status, view all members.",
-    color: "bg-blue-50 text-blue-600",
-    stat: `${mockMembers.filter((m) => m.status === "PENDING").length} pending`,
-  },
-  {
-    href: "/ec/elections",
-    icon: <Vote className="w-6 h-6" />,
-    title: "Election Control",
-    desc: "Manage election lifecycle and view live results.",
-    color: "bg-purple-50 text-purple-600",
-    stat: "Phase 1 Open",
-  },
-  {
-    href: "/ec/finance",
-    icon: <DollarSign className="w-6 h-6" />,
-    title: "Finance",
-    desc: "Budgets, expenditures, and financial reports.",
-    color: "bg-green-50 text-green-600",
-    stat: "3 budgets",
-  },
-  {
-    href: "/ec/meetings",
-    icon: <CalendarDays className="w-6 h-6" />,
-    title: "Meeting Scheduler",
-    desc: "Schedule meetings and capture attendance.",
-    color: "bg-indigo-50 text-indigo-600",
-    stat: `${mockMeetings.filter((m) => m.status === "upcoming").length} upcoming`,
-  },
-  {
-    href: "/ec/media",
-    icon: <Image className="w-6 h-6" />,
-    title: "Media & Gallery",
-    desc: "Upload event photos and newsletters.",
-    color: "bg-orange-50 text-orange-600",
-    stat: "6 items",
-  },
-];
-
 export default function EcPanelPage() {
   const { user, can } = useAuthContext();
   const { t } = useLang();
@@ -63,6 +20,59 @@ export default function EcPanelPage() {
 
   if (!user || !isEcOfficer(user.role)) return null;
 
+  const pendingCount = mockMembers.filter((m) => m.status === "PENDING").length;
+  const upcomingMeetings = mockMeetings.filter((m) => m.status === "upcoming").length;
+
+  const modules = [
+    {
+      href: "/ec/members",
+      icon: <Users className="w-6 h-6" />,
+      title: t("ecPanel.modules.members.title"),
+      desc: t("ecPanel.modules.members.desc"),
+      color: "bg-blue-50 text-blue-600",
+      stat: `${pendingCount} ${t("ecPanel.modules.members.stat")}`,
+    },
+    {
+      href: "/ec/elections",
+      icon: <Vote className="w-6 h-6" />,
+      title: t("ecPanel.modules.elections.title"),
+      desc: t("ecPanel.modules.elections.desc"),
+      color: "bg-purple-50 text-purple-600",
+      stat: t("ecPanel.modules.elections.stat"),
+    },
+    {
+      href: "/ec/finance",
+      icon: <DollarSign className="w-6 h-6" />,
+      title: t("ecPanel.modules.finance.title"),
+      desc: t("ecPanel.modules.finance.desc"),
+      color: "bg-green-50 text-green-600",
+      stat: t("ecPanel.modules.finance.stat"),
+    },
+    {
+      href: "/ec/meetings",
+      icon: <CalendarDays className="w-6 h-6" />,
+      title: t("ecPanel.modules.meetings.title"),
+      desc: t("ecPanel.modules.meetings.desc"),
+      color: "bg-indigo-50 text-indigo-600",
+      stat: `${upcomingMeetings} ${t("ecPanel.modules.meetings.upcoming")}`,
+    },
+    {
+      href: "/ec/media",
+      icon: <Image className="w-6 h-6" />,
+      title: t("ecPanel.modules.media.title"),
+      desc: t("ecPanel.modules.media.desc"),
+      color: "bg-orange-50 text-orange-600",
+      stat: t("ecPanel.modules.media.stat"),
+    },
+  ];
+
+  const recentActivity = [
+    { action: t("ecPanel.recentActivity") + ": Member approved", actor: "EC Officer", time: "2h", icon: "✅" },
+    { action: "EC Election Phase 1 opened", actor: t("roles.SECRETARY"), time: "1d", icon: "🗳" },
+    { action: "Budget approved for Annual Contest", actor: t("roles.PRESIDENT"), time: "2d", icon: "💰" },
+    { action: "3 new member applications received", actor: "System", time: "3d", icon: "📋" },
+  ];
+
   return (
     <PageLayout>
       <div className="pt-20 pb-16 min-h-screen bg-slate-50">
@@ -70,16 +80,16 @@ export default function EcPanelPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="mb-8">
               <h1 className="font-heading text-3xl font-bold text-primary">{t("nav.ecPanel")}</h1>
-              <p className="text-gray-400 mt-1">CSEDU Students&apos; Club — Term 8 Management</p>
+              <p className="text-gray-400 mt-1">{t("ecPanel.subtitle")}</p>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
               {[
-                { label: "Total Members", value: String(mockStats.totalMembers), icon: "👥" },
-                { label: "Active Events", value: String(mockStats.activeEvents), icon: "🎪" },
-                { label: "Current Term", value: `Term ${mockStats.currentTerm}`, icon: "📅" },
-                { label: "Pending Apps", value: `${mockMembers.filter((m) => m.status === "PENDING").length}`, icon: "⏳" },
+                { label: t("ecPanel.totalMembers"), value: String(mockStats.totalMembers), icon: "👥" },
+                { label: t("ecPanel.activeEvents"), value: String(mockStats.activeEvents), icon: "🎪" },
+                { label: t("ecPanel.currentTerm"), value: `Term ${mockStats.currentTerm}`, icon: "📅" },
+                { label: t("ecPanel.pendingApps"), value: `${pendingCount}`, icon: "⏳" },
               ].map((s, i) => (
                 <div key={i} className="card text-center">
                   <div className="text-2xl mb-1">{s.icon}</div>
@@ -119,24 +129,24 @@ export default function EcPanelPage() {
               })}
             </div>
 
-            {/* Recent activity placeholder */}
+            {/* Recent activity */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="card mt-6">
               <div className="flex items-center gap-2 mb-4">
                 <Activity className="w-5 h-5 text-gray-400" />
-                <h2 className="font-heading text-lg font-semibold text-primary">Recent Activity</h2>
+                <h2 className="font-heading text-lg font-semibold text-primary">{t("ecPanel.recentActivity")}</h2>
               </div>
               <div className="space-y-3">
                 {[
-                  { action: "Member application approved", actor: "EC Officer", time: "2 hours ago", icon: "✅" },
-                  { action: "EC Election Phase 1 opened", actor: "Secretary", time: "1 day ago", icon: "🗳" },
-                  { action: "Budget approved for Annual Contest", actor: "President", time: "2 days ago", icon: "💰" },
-                  { action: "3 new member applications received", actor: "System", time: "3 days ago", icon: "📋" },
+                  { action: "Member application approved", actor: "EC Officer", time: "2h", icon: "✅" },
+                  { action: "EC Election Phase 1 opened", actor: t("roles.SECRETARY"), time: "1d", icon: "🗳" },
+                  { action: "Budget approved for Annual Contest", actor: t("roles.PRESIDENT"), time: "2d", icon: "💰" },
+                  { action: "3 new member applications received", actor: "System", time: "3d", icon: "📋" },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
                     <span className="text-lg flex-shrink-0">{item.icon}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-primary font-medium">{item.action}</p>
-                      <p className="text-xs text-gray-400">by {item.actor}</p>
+                      <p className="text-xs text-gray-400">{t("ecPanel.by")} {item.actor}</p>
                     </div>
                     <span className="text-xs text-gray-400 flex-shrink-0">{item.time}</span>
                   </div>

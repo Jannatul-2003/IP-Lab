@@ -70,11 +70,11 @@ export default function RegisterPage() {
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
             <Check className="w-10 h-10 text-green-500" />
           </div>
-          <h1 className="font-heading text-2xl font-bold text-primary mb-3">Application Submitted!</h1>
-          <p className="text-gray-400 mb-6 text-sm leading-relaxed">Your membership application has been submitted. An EC officer will review it and you will be notified via email.</p>
+          <h1 className="font-heading text-2xl font-bold text-primary mb-3">{t("auth.applicationSubmitted")}</h1>
+          <p className="text-gray-400 mb-6 text-sm leading-relaxed">{t("auth.applicationSubmittedDesc")}</p>
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => router.push("/")}>Go Home</Button>
-            <Button className="flex-1" onClick={() => router.push("/login")}>Sign In</Button>
+            <Button variant="outline" className="flex-1" onClick={() => router.push("/")}>{t("auth.goHome")}</Button>
+            <Button className="flex-1" onClick={() => router.push("/login")}>{t("auth.signIn")}</Button>
           </div>
         </motion.div>
       </div>
@@ -116,11 +116,11 @@ export default function RegisterPage() {
               <Input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="01711000000" />
             </FormField>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField label="Password" error={errors.password} required>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label={t("auth.password")} error={errors.password} required>
                 <Input type="password" value={form.password} onChange={(e) => set("password", e.target.value)} placeholder="Min. 8 chars" error={!!errors.password} />
               </FormField>
-              <FormField label="Confirm Password" error={errors.confirmPassword} required>
+              <FormField label={t("auth.confirmPassword")} error={errors.confirmPassword} required>
                 <Input type="password" value={form.confirmPassword} onChange={(e) => set("confirmPassword", e.target.value)} placeholder="Re-enter" error={!!errors.confirmPassword} />
               </FormField>
             </div>
@@ -151,7 +151,7 @@ export default function RegisterPage() {
           </p>
         </div>
         <p className="text-center text-white/40 text-xs mt-6">
-          <Link href="/" className="hover:text-white/70 transition-colors">← Back to Home</Link>
+          <Link href="/" className="hover:text-white/70 transition-colors">{t("auth.backToHome")}</Link>
         </p>
       </motion.div>
     </div>

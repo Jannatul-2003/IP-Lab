@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useToast } from "@/components/ui/Toaster";
-import { useAuthContext } from "@/app/providers";
+import { useAuthContext, useLang } from "@/app/providers";
 import { mockMembers } from "@/lib/mockData";
 import { isEcOfficer } from "@/lib/auth";
 import { formatDate, getInitials } from "@/lib/utils";
@@ -18,6 +18,7 @@ type ActionType = "approve" | "reject" | "cancel";
 
 export default function EcMembersPage() {
   const { user } = useAuthContext();
+  const { t } = useLang();
   const router = useRouter();
   const toast = useToast();
 
@@ -56,9 +57,9 @@ export default function EcMembersPage() {
     setLoading(false);
     setConfirmAction(null);
     const msgs: Record<ActionType, string> = {
-      approve: `${member.fullName} approved as active member.`,
-      reject: `${member.fullName}'s application rejected.`,
-      cancel: `${member.fullName}'s membership cancelled.`,
+      approve: `${member.fullName} ${t("membership.approve")}.`,
+      reject: `${member.fullName} ${t("membership.reject")}.`,
+      cancel: `${member.fullName} ${t("membership.cancel")}.`,
     };
     if (type === "approve") toast.success(msgs[type]);
     else toast.warning(msgs[type]);
@@ -76,11 +77,11 @@ export default function EcMembersPage() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <button onClick={() => router.push("/ec")} className="text-xs text-gray-400 hover:text-primary mb-1 flex items-center gap-1">
-                  ← EC Panel
+                  {t("membership.backToPanel")}
                 </button>
                 <h1 className="font-heading text-3xl font-bold text-primary flex items-center gap-3">
                   <Users className="w-7 h-7 text-blue-500" />
-                  Member Management
+                  {t("membership.title")}
                 </h1>
               </div>
             </div>
@@ -88,9 +89,9 @@ export default function EcMembersPage() {
             {/* Summary stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               {[
-                { label: "Total", value: members.length, color: "text-primary" },
-                { label: "Pending", value: pendingCount, color: "text-orange-500" },
-                { label: "Active", value: activeCount, color: "text-green-600" },
+                { label: t("membership.total"), value: members.length, color: "text-primary" },
+                { label: t("membership.pendingTab"), value: pendingCount, color: "text-orange-500" },
+                { label: t("membership.activeTab"), value: activeCount, color: "text-green-600" },
               ].map((s) => (
                 <div key={s.label} className="card text-center">
                   <p className={`font-heading text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -101,15 +102,17 @@ export default function EcMembersPage() {
 
             {/* Tabs */}
             <div className="flex gap-2 mb-4">
-              {(["pending", "active"] as const).map((t) => (
+              {(["pending", "active"] as const).map((tabKey) => (
                 <button
-                  key={t}
-                  onClick={() => setTab(t)}
+                  key={tabKey}
+                  onClick={() => setTab(tabKey)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    tab === t ? "bg-accent text-white shadow-sm" : "bg-white text-gray-500 hover:bg-slate-100 border border-slate-100"
+                    tab === tabKey ? "bg-accent text-white shadow-sm" : "bg-white text-gray-500 hover:bg-slate-100 border border-slate-100"
                   }`}
                 >
-                  {t === "pending" ? `Pending (${pendingCount})` : `Active (${activeCount})`}
+                  {tabKey === "pending"
+                    ? `${t("membership.pendingTab")} (${pendingCount})`
+                    : `${t("membership.activeTab")} (${activeCount})`}
                 </button>
               ))}
             </div>
@@ -122,7 +125,7 @@ export default function EcMembersPage() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by name or student ID…"
+                  placeholder={t("membership.searchPlaceholder")}
                   className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/30 bg-slate-50"
                 />
               </div>
@@ -133,7 +136,7 @@ export default function EcMembersPage() {
               {filtered.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
                   <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No members found.</p>
+                  <p className="text-sm">{t("membership.noFound")}</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-50">
@@ -154,11 +157,11 @@ export default function EcMembersPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-primary text-sm">{member.fullName}</p>
                           <p className="text-xs text-gray-400">
-                            {member.studentId} · Batch {member.batchYear}
+                            {member.studentId} · {t("membership.batch")} {member.batchYear}
                             {member.phone && ` · ${member.phone}`}
                           </p>
                           {member.joinedDate && (
-                            <p className="text-xs text-gray-300 mt-0.5">Joined {formatDate(member.joinedDate)}</p>
+                            <p className="text-xs text-gray-300 mt-0.5">{t("membership.joined")} {formatDate(member.joinedDate)}</p>
                           )}
                         </div>
 
@@ -173,7 +176,7 @@ export default function EcMembersPage() {
                                 leftIcon={<CheckCircle className="w-3.5 h-3.5" />}
                                 onClick={() => setConfirmAction({ type: "approve", member })}
                               >
-                                Approve
+                                {t("membership.approve")}
                               </Button>
                               <Button
                                 size="sm"
@@ -181,7 +184,7 @@ export default function EcMembersPage() {
                                 leftIcon={<XCircle className="w-3.5 h-3.5" />}
                                 onClick={() => setConfirmAction({ type: "reject", member })}
                               >
-                                Reject
+                                {t("membership.reject")}
                               </Button>
                             </>
                           )}
@@ -193,7 +196,7 @@ export default function EcMembersPage() {
                               onClick={() => setConfirmAction({ type: "cancel", member })}
                               className="text-red-400 hover:text-red-600"
                             >
-                              Cancel
+                              {t("membership.cancel")}
                             </Button>
                           )}
                         </div>
@@ -211,9 +214,9 @@ export default function EcMembersPage() {
         isOpen={confirmAction?.type === "approve"}
         onConfirm={() => confirmAction && executeAction("approve", confirmAction.member)}
         onCancel={() => setConfirmAction(null)}
-        title="Approve Application?"
-        message={`Approve ${confirmAction?.member.fullName} as an active member of CSEDU Students' Club?`}
-        confirmLabel="Approve"
+        title={t("membership.approveTitle")}
+        message={`${t("membership.approve")} ${confirmAction?.member.fullName}?`}
+        confirmLabel={t("membership.approveConfirm")}
         variant="info"
         isLoading={loading}
       />
@@ -221,9 +224,9 @@ export default function EcMembersPage() {
         isOpen={confirmAction?.type === "reject"}
         onConfirm={() => confirmAction && executeAction("reject", confirmAction.member)}
         onCancel={() => setConfirmAction(null)}
-        title="Reject Application?"
-        message={`Reject ${confirmAction?.member.fullName}'s membership application? This action cannot be undone.`}
-        confirmLabel="Reject"
+        title={t("membership.rejectTitle")}
+        message={`${t("membership.reject")} ${confirmAction?.member.fullName}? ${t("common.thisActionIrreversible")}`}
+        confirmLabel={t("membership.rejectConfirm")}
         variant="danger"
         isLoading={loading}
       />
@@ -231,9 +234,9 @@ export default function EcMembersPage() {
         isOpen={confirmAction?.type === "cancel"}
         onConfirm={() => confirmAction && executeAction("cancel", confirmAction.member)}
         onCancel={() => setConfirmAction(null)}
-        title="Cancel Membership?"
-        message={`Cancel ${confirmAction?.member.fullName}'s active membership? They will lose access to member features.`}
-        confirmLabel="Cancel Membership"
+        title={t("membership.cancelTitle")}
+        message={`${t("membership.cancel")} ${confirmAction?.member.fullName}?`}
+        confirmLabel={t("membership.cancelConfirm")}
         variant="danger"
         isLoading={loading}
       />

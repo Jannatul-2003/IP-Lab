@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Input } from "@/components/ui/FormField";
 import { useToast } from "@/components/ui/Toaster";
-import { useAuthContext } from "@/app/providers";
+import { useAuthContext, useLang } from "@/app/providers";
 import { mockGallery } from "@/lib/mockData";
 import { isEcOfficer } from "@/lib/auth";
 import { formatDate, cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ import { MediaItem } from "@/types";
 
 export default function EcMediaPage() {
   const { user } = useAuthContext();
+  const { t } = useLang();
   const router = useRouter();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -53,7 +54,7 @@ export default function EcMediaPage() {
     setItems((prev) => [...newItems, ...prev]);
     setTagInput("");
     setUploading(false);
-    toast.success(`${files.length} file(s) uploaded successfully.`);
+    toast.success(`${files.length} ${t("ecPanel.media.uploadSuccess")}`);
   }
 
   async function deleteItem() {
@@ -63,7 +64,7 @@ export default function EcMediaPage() {
     setItems((prev) => prev.filter((m) => m.id !== deleteTarget.id));
     setDeleting(false);
     setDeleteTarget(null);
-    toast.warning("Media item deleted.");
+    toast.warning(t("ecPanel.media.deleted"));
   }
 
   return (
@@ -72,10 +73,10 @@ export default function EcMediaPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="mb-8">
-              <button onClick={() => router.push("/ec")} className="text-xs text-gray-400 hover:text-primary mb-1">← EC Panel</button>
+              <button onClick={() => router.push("/ec")} className="text-xs text-gray-400 hover:text-primary mb-1">{t("ecPanel.backToPanel")}</button>
               <h1 className="font-heading text-3xl font-bold text-primary flex items-center gap-3">
                 <Image className="w-7 h-7 text-orange-500" />
-                Media & Gallery
+                {t("ecPanel.media.title")}
               </h1>
             </div>
 
@@ -92,21 +93,21 @@ export default function EcMediaPage() {
             >
               <div className="text-center py-8">
                 <Upload className={cn("w-10 h-10 mx-auto mb-3 transition-colors", dragOver ? "text-accent" : "text-gray-300")} />
-                <p className="font-semibold text-primary text-sm mb-1">Drag & drop files here, or click to browse</p>
-                <p className="text-xs text-gray-400">Supports: JPG, PNG, WEBP, PDF · Max 10MB per file</p>
+                <p className="font-semibold text-primary text-sm mb-1">{t("ecPanel.media.dropzone")}</p>
+                <p className="text-xs text-gray-400">{t("ecPanel.media.dropzoneHint")}</p>
 
                 <div className="mt-4 flex items-center justify-center gap-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-2">
                     <Tag className="w-4 h-4 text-gray-400" />
                     <Input
-                      placeholder="Tags (comma-separated)"
+                      placeholder={t("ecPanel.media.tagsPlaceholder")}
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
                       className="text-xs w-48"
                     />
                   </div>
                   <Button size="sm" isLoading={uploading} leftIcon={<Upload className="w-3.5 h-3.5" />} onClick={() => fileRef.current?.click()}>
-                    Upload
+                    {t("ecPanel.media.upload")}
                   </Button>
                 </div>
               </div>
@@ -119,7 +120,7 @@ export default function EcMediaPage() {
                 onClick={() => setFilterTag("")}
                 className={cn("px-3 py-1 rounded-full text-xs font-medium transition-all", !filterTag ? "bg-accent text-white" : "bg-white border border-slate-200 text-gray-500 hover:border-accent/40")}
               >
-                All ({items.length})
+                {t("ecPanel.media.all")} ({items.length})
               </button>
               {allTags.map((tag) => (
                 <button
@@ -136,7 +137,7 @@ export default function EcMediaPage() {
             {filtered.length === 0 ? (
               <div className="card text-center py-16 text-gray-400">
                 <Image className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">No media items found.</p>
+                <p className="text-sm">{t("ecPanel.media.noMedia")}</p>
               </div>
             ) : (
               <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 space-y-3">
@@ -152,7 +153,7 @@ export default function EcMediaPage() {
                       {item.mediaType === "pdf" ? (
                         <div className="h-32 flex flex-col items-center justify-center bg-red-50">
                           <FileText className="w-10 h-10 text-red-400 mb-2" />
-                          <p className="text-xs text-gray-400">PDF Document</p>
+                          <p className="text-xs text-gray-400">{t("ecPanel.media.pdfDocument")}</p>
                         </div>
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -242,9 +243,9 @@ export default function EcMediaPage() {
         isOpen={!!deleteTarget}
         onConfirm={deleteItem}
         onCancel={() => setDeleteTarget(null)}
-        title="Delete Media Item?"
-        message="This will permanently remove the media item from the gallery. This action cannot be undone."
-        confirmLabel="Delete"
+        title={t("ecPanel.media.deleteTitle")}
+        message={t("ecPanel.media.deleteMessage")}
+        confirmLabel={t("ecPanel.media.deleteConfirm")}
         variant="danger"
         isLoading={deleting}
       />

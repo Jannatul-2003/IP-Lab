@@ -120,7 +120,7 @@ function EventCard({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="text-2xl">{eventTypeIcon(event.eventType)}</span>
-          <span className="badge bg-surface text-primary capitalize text-xs">{event.eventType}</span>
+          <span className="badge bg-surface text-primary capitalize text-xs">{t(`events.filter.${event.eventType}`)}</span>
         </div>
         <StatusBadge status={event.status} />
       </div>
@@ -156,7 +156,7 @@ function EventCard({
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-xs text-gray-400 mt-1">{pct}% full</p>
+        <p className="text-xs text-gray-400 mt-1">{pct}{t("events.percentFull")}</p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -173,7 +173,7 @@ function EventCard({
             {isRsvpd ? t("events.cancelRsvp") : t("events.rsvp")}
           </Button>
         )}
-        {isFull && <span className="text-xs text-red-400 font-medium px-2">Full</span>}
+        {isFull && <span className="text-xs text-red-400 font-medium px-2">{t("events.full")}</span>}
       </div>
     </motion.div>
   );

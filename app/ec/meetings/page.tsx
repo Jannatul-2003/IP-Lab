@@ -9,13 +9,13 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { FormField, Input, Textarea } from "@/components/ui/FormField";
 import { useToast } from "@/components/ui/Toaster";
-import { useAuthContext } from "@/app/providers";
+import { useAuthContext, useLang } from "@/app/providers";
 import { mockMeetings, mockMembers } from "@/lib/mockData";
 import { isEcOfficer } from "@/lib/auth";
 import { formatDateTime, formatDate, cn } from "@/lib/utils";
 import { Meeting, MeetingAttendanceRecord } from "@/types";
 
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS_EN = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function buildCalendar(year: number, month: number) {
   const firstDay = new Date(year, month, 1).getDay();
@@ -25,6 +25,7 @@ function buildCalendar(year: number, month: number) {
 
 export default function EcMeetingsPage() {
   const { user, can } = useAuthContext();
+  const { t } = useLang();
   const router = useRouter();
   const toast = useToast();
 
@@ -40,7 +41,6 @@ export default function EcMeetingsPage() {
   const [form, setForm] = useState({ title: "", agenda: "", scheduledAt: "", venue: "" });
   const [formErrors, setFormErrors] = useState<Partial<typeof form>>({});
 
-  // attendance state: memberId -> present
   const [attendanceMap, setAttendanceMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -51,7 +51,6 @@ export default function EcMeetingsPage() {
 
   const canCall = can("PRESIDENT") || can("SECRETARY");
 
-  // --- Calendar helpers ---
   const { firstDay, daysInMonth } = buildCalendar(calYear, calMonth);
 
   function meetingDaysInMonth(): Set<number> {
@@ -73,12 +72,11 @@ export default function EcMeetingsPage() {
     else setCalMonth((m) => m + 1);
   }
 
-  // --- Create meeting ---
   function validateForm() {
     const errs: Partial<typeof form> = {};
-    if (!form.title.trim()) errs.title = "Title is required.";
-    if (!form.scheduledAt) errs.scheduledAt = "Date & time is required.";
-    if (!form.venue.trim()) errs.venue = "Venue is required.";
+    if (!form.title.trim()) errs.title = t("ecPanel.meetings.meetingTitle") + " required.";
+    if (!form.scheduledAt) errs.scheduledAt = t("ecPanel.meetings.dateTime") + " required.";
+    if (!form.venue.trim()) errs.venue = t("ecPanel.meetings.venue") + " required.";
     return errs;
   }
 
@@ -103,10 +101,9 @@ export default function EcMeetingsPage() {
     setFormErrors({});
     setLoading(false);
     setCreateOpen(false);
-    toast.success("Meeting scheduled. All EC members notified.");
+    toast.success(t("ecPanel.meetings.meetingScheduled") + ".");
   }
 
-  // --- Attendance capture ---
   function openAttendance(meeting: Meeting) {
     const init: Record<string, boolean> = {};
     mockMembers.forEach((m) => {
@@ -135,7 +132,7 @@ export default function EcMeetingsPage() {
     );
     setLoading(false);
     setAttendanceTarget(null);
-    toast.success("Attendance recorded.");
+    toast.success(t("ecPanel.meetings.saveAttendance") + ".");
   }
 
   const upcoming = meetings.filter((m) => m.status === "upcoming");
@@ -143,6 +140,9 @@ export default function EcMeetingsPage() {
 
   const statusVariant = (s: string) =>
     s === "upcoming" ? "info" : s === "completed" ? "success" : "warning";
+
+  const statusLabel = (s: string) =>
+    s === "upcoming" ? t("ecPanel.meetings.upcoming") : t("ecPanel.meetings.completed");
 
   return (
     <PageLayout>
@@ -154,16 +154,16 @@ export default function EcMeetingsPage() {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <button onClick={() => router.push("/ec")} className="text-xs text-gray-400 hover:text-primary mb-1">
-                  ← EC Panel
+                  {t("ecPanel.backToPanel")}
                 </button>
                 <h1 className="font-heading text-3xl font-bold text-primary flex items-center gap-3">
                   <CalendarDays className="w-7 h-7 text-blue-500" />
-                  Meeting Scheduler
+                  {t("ecPanel.meetings.title")}
                 </h1>
               </div>
               {canCall && (
                 <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => setCreateOpen(true)} size="sm">
-                  Schedule Meeting
+                  {t("ecPanel.meetings.scheduleMeeting")}
                 </Button>
               )}
             </div>
@@ -176,7 +176,7 @@ export default function EcMeetingsPage() {
                   <div className="flex items-center justify-between mb-4">
                     <button onClick={prevMonth} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-gray-500 transition-colors">‹</button>
                     <p className="font-heading font-semibold text-primary text-sm">
-                      {MONTHS[calMonth]} {calYear}
+                      {MONTHS_EN[calMonth]} {calYear}
                     </p>
                     <button onClick={nextMonth} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-gray-500 transition-colors">›</button>
                   </div>
@@ -211,15 +211,15 @@ export default function EcMeetingsPage() {
 
                   <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-gray-400">
                     <div className="w-2 h-2 rounded-full bg-blue-400" />
-                    Meeting scheduled
+                    {t("ecPanel.meetings.meetingScheduled")}
                   </div>
                 </div>
 
                 {/* Quick stats */}
                 <div className="grid grid-cols-2 gap-3 mt-4">
                   {[
-                    { label: "Upcoming", value: upcoming.length, color: "text-blue-600", icon: "📅" },
-                    { label: "Completed", value: past.length, color: "text-green-600", icon: "✅" },
+                    { label: t("ecPanel.meetings.upcomingLabel"), value: upcoming.length, color: "text-blue-600", icon: "📅" },
+                    { label: t("ecPanel.meetings.completed"), value: past.length, color: "text-green-600", icon: "✅" },
                   ].map((s) => (
                     <div key={s.label} className="card text-center py-4">
                       <div className="text-xl mb-1">{s.icon}</div>
@@ -236,7 +236,7 @@ export default function EcMeetingsPage() {
                 {/* Upcoming */}
                 {upcoming.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Upcoming</p>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{t("ecPanel.meetings.upcomingLabel")}</p>
                     <div className="space-y-3">
                       {upcoming.map((meeting, i) => (
                         <MeetingCard
@@ -248,6 +248,8 @@ export default function EcMeetingsPage() {
                           onAttendance={() => openAttendance(meeting)}
                           canCall={canCall}
                           statusVariant={statusVariant}
+                          statusLabel={statusLabel}
+                          t={t}
                         />
                       ))}
                     </div>
@@ -257,7 +259,7 @@ export default function EcMeetingsPage() {
                 {/* Past */}
                 {past.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 mt-2">Past Meetings</p>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 mt-2">{t("ecPanel.meetings.pastMeetings")}</p>
                     <div className="space-y-3">
                       {past.map((meeting, i) => (
                         <MeetingCard
@@ -269,6 +271,8 @@ export default function EcMeetingsPage() {
                           onAttendance={() => openAttendance(meeting)}
                           canCall={canCall}
                           statusVariant={statusVariant}
+                          statusLabel={statusLabel}
+                          t={t}
                         />
                       ))}
                     </div>
@@ -278,7 +282,7 @@ export default function EcMeetingsPage() {
                 {meetings.length === 0 && (
                   <div className="card text-center py-16 text-gray-400">
                     <CalendarDays className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">No meetings scheduled yet.</p>
+                    <p className="text-sm">{t("ecPanel.meetings.noMeetings")}</p>
                   </div>
                 )}
               </div>
@@ -288,18 +292,18 @@ export default function EcMeetingsPage() {
       </div>
 
       {/* Create Meeting Modal */}
-      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Schedule New Meeting" size="md">
+      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title={t("ecPanel.meetings.scheduleNew")} size="md">
         <form onSubmit={handleCreate} className="space-y-4" noValidate>
-          <FormField label="Meeting Title" required error={formErrors.title}>
+          <FormField label={t("ecPanel.meetings.meetingTitle")} required error={formErrors.title}>
             <Input
               value={form.title}
               onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-              placeholder="e.g. Monthly EC Review"
+              placeholder={t("ecPanel.meetings.meetingTitlePlaceholder")}
               error={!!formErrors.title}
             />
           </FormField>
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Date & Time" required error={formErrors.scheduledAt}>
+            <FormField label={t("ecPanel.meetings.dateTime")} required error={formErrors.scheduledAt}>
               <Input
                 type="datetime-local"
                 value={form.scheduledAt}
@@ -307,26 +311,26 @@ export default function EcMeetingsPage() {
                 error={!!formErrors.scheduledAt}
               />
             </FormField>
-            <FormField label="Venue" required error={formErrors.venue}>
+            <FormField label={t("ecPanel.meetings.venue")} required error={formErrors.venue}>
               <Input
                 value={form.venue}
                 onChange={(e) => setForm((p) => ({ ...p, venue: e.target.value }))}
-                placeholder="Room / Online"
+                placeholder={t("ecPanel.meetings.venuePlaceholder")}
                 error={!!formErrors.venue}
               />
             </FormField>
           </div>
-          <FormField label="Agenda">
+          <FormField label={t("ecPanel.meetings.agenda")}>
             <Textarea
               value={form.agenda}
               onChange={(e) => setForm((p) => ({ ...p, agenda: e.target.value }))}
-              placeholder="Topics to be discussed…"
+              placeholder={t("ecPanel.finance.topicsPlaceholder")}
               rows={3}
             />
           </FormField>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" type="button" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button type="submit" isLoading={loading}>Schedule</Button>
+            <Button variant="ghost" type="button" onClick={() => setCreateOpen(false)}>{t("common.cancel")}</Button>
+            <Button type="submit" isLoading={loading}>{t("ecPanel.meetings.schedule")}</Button>
           </div>
         </form>
       </Modal>
@@ -335,7 +339,7 @@ export default function EcMeetingsPage() {
       <Modal
         isOpen={!!attendanceTarget}
         onClose={() => setAttendanceTarget(null)}
-        title="Capture Attendance"
+        title={t("ecPanel.meetings.captureAttendanceTitle")}
         size="md"
       >
         {attendanceTarget && (
@@ -374,11 +378,11 @@ export default function EcMeetingsPage() {
             </div>
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
               <p className="text-xs text-gray-400">
-                {Object.values(attendanceMap).filter(Boolean).length} / {mockMembers.length} present
+                {Object.values(attendanceMap).filter(Boolean).length} / {mockMembers.length} {t("ecPanel.meetings.present")}
               </p>
               <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => setAttendanceTarget(null)}>Cancel</Button>
-                <Button onClick={saveAttendance} isLoading={loading}>Save Attendance</Button>
+                <Button variant="ghost" onClick={() => setAttendanceTarget(null)}>{t("common.cancel")}</Button>
+                <Button onClick={saveAttendance} isLoading={loading}>{t("ecPanel.meetings.saveAttendance")}</Button>
               </div>
             </div>
           </div>
@@ -388,7 +392,6 @@ export default function EcMeetingsPage() {
   );
 }
 
-// --- Meeting Card sub-component ---
 interface MeetingCardProps {
   meeting: Meeting;
   index: number;
@@ -397,9 +400,11 @@ interface MeetingCardProps {
   onAttendance: () => void;
   canCall: boolean;
   statusVariant: (s: string) => "info" | "success" | "warning";
+  statusLabel: (s: string) => string;
+  t: (k: string) => string;
 }
 
-function MeetingCard({ meeting, index, expanded, onToggle, onAttendance, canCall, statusVariant }: MeetingCardProps) {
+function MeetingCard({ meeting, index, expanded, onToggle, onAttendance, canCall, statusVariant, statusLabel, t }: MeetingCardProps) {
   const presentCount = meeting.attendanceRecords.filter((r) => r.present).length;
   const totalCount = meeting.attendanceRecords.length;
 
@@ -438,7 +443,7 @@ function MeetingCard({ meeting, index, expanded, onToggle, onAttendance, canCall
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <Badge variant={statusVariant(meeting.status)}>
-                {meeting.status}
+                {statusLabel(meeting.status)}
               </Badge>
               {expanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
             </div>
@@ -457,7 +462,7 @@ function MeetingCard({ meeting, index, expanded, onToggle, onAttendance, canCall
               <div className="px-5 pb-5 border-t border-slate-100 pt-4 space-y-4">
                 {meeting.agenda && (
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Agenda</p>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{t("ecPanel.meetings.agenda")}</p>
                     <p className="text-sm text-gray-600 leading-relaxed">{meeting.agenda}</p>
                   </div>
                 )}
@@ -465,7 +470,7 @@ function MeetingCard({ meeting, index, expanded, onToggle, onAttendance, canCall
                 {meeting.attendanceRecords.length > 0 && (
                   <div>
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                      Attendance — {presentCount}/{totalCount} present
+                      {t("ecPanel.meetings.captureAttendanceTitle")} — {presentCount}/{totalCount} {t("ecPanel.meetings.present")}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {meeting.attendanceRecords.map((r) => (
@@ -495,7 +500,7 @@ function MeetingCard({ meeting, index, expanded, onToggle, onAttendance, canCall
                       leftIcon={<Users className="w-3.5 h-3.5" />}
                       onClick={onAttendance}
                     >
-                      {meeting.attendanceRecords.length > 0 ? "Update Attendance" : "Capture Attendance"}
+                      {meeting.attendanceRecords.length > 0 ? t("ecPanel.meetings.updateAttendance") : t("ecPanel.meetings.captureAttendance")}
                     </Button>
                   )}
                   {meeting.minutesUrl && (
@@ -505,7 +510,7 @@ function MeetingCard({ meeting, index, expanded, onToggle, onAttendance, canCall
                       leftIcon={<FileText className="w-3.5 h-3.5" />}
                       onClick={() => window.open(meeting.minutesUrl, "_blank")}
                     >
-                      View Minutes
+                      {t("common.view")}
                     </Button>
                   )}
                 </div>

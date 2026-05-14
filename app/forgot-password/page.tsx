@@ -20,8 +20,8 @@ export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
 
   function validate(): boolean {
-    if (!email.trim()) { setEmailError("Email is required."); return false; }
-    if (!EMAIL_RE.test(email)) { setEmailError("Enter a valid email address."); return false; }
+    if (!email.trim()) { setEmailError(t("forgotPassword.emailRequired")); return false; }
+    if (!EMAIL_RE.test(email)) { setEmailError(t("forgotPassword.invalidEmail")); return false; }
     setEmailError("");
     return true;
   }
@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
     await new Promise((r) => setTimeout(r, 900));
     setLoading(false);
     setSent(true);
-    toast.success("Reset link sent! Check your inbox.");
+    toast.success(t("forgotPassword.resetLinkSent"));
   }
 
   return (
@@ -64,27 +64,27 @@ export default function ForgotPasswordPage() {
                 <CheckCircle className="w-8 h-8 text-green-500" />
               </div>
               <h2 className="font-heading text-xl font-bold text-primary dark:text-white">
-                Check your inbox
+                {t("forgotPassword.checkInbox")}
               </h2>
               <p className="text-sm text-gray-400 dark:text-gray-400 leading-relaxed">
-                We&apos;ve sent a password reset link to{" "}
-                <strong className="text-primary dark:text-white">{email}</strong>.
-                The link expires in <strong>30 minutes</strong>.
+                {t("forgotPassword.checkInboxDesc")}{" "}
+                <strong className="text-primary dark:text-white">{email}</strong>.{" "}
+                {t("forgotPassword.linkExpiry")}
               </p>
               <p className="text-xs text-gray-400">
-                Didn&apos;t receive it?{" "}
+                {t("forgotPassword.didNotReceive")}{" "}
                 <button
                   onClick={() => { setSent(false); }}
                   className="text-accent hover:underline font-medium"
                 >
-                  Try again
+                  {t("forgotPassword.tryAgain")}
                 </button>
               </p>
               <Link
                 href="/login"
                 className="inline-flex items-center gap-2 text-sm text-accent hover:underline font-medium mt-2"
               >
-                <ArrowLeft className="w-4 h-4" /> Back to Sign In
+                <ArrowLeft className="w-4 h-4" /> {t("forgotPassword.backToSignIn")}
               </Link>
             </div>
           ) : (
@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
                   {t("auth.forgotPassword")}
                 </h1>
                 <p className="text-gray-400 text-sm mt-1">
-                  Enter your registered email and we&apos;ll send a reset link.
+                  {t("forgotPassword.subtitle")}
                 </p>
               </div>
 
@@ -119,7 +119,7 @@ export default function ForgotPasswordPage() {
                 </FormField>
 
                 <Button type="submit" className="w-full" size="lg" isLoading={loading}>
-                  Send Reset Link
+                  {t("forgotPassword.sendResetLink")}
                 </Button>
               </form>
 
@@ -127,7 +127,7 @@ export default function ForgotPasswordPage() {
                 href="/login"
                 className="flex items-center justify-center gap-2 mt-6 text-sm text-gray-400 hover:text-primary dark:hover:text-white transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" /> Back to Sign In
+                <ArrowLeft className="w-4 h-4" /> {t("forgotPassword.backToSignIn")}
               </Link>
             </>
           )}

@@ -10,7 +10,7 @@ import { Modal } from "@/components/ui/Modal";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { FormField, Input, Textarea } from "@/components/ui/FormField";
 import { useToast } from "@/components/ui/Toaster";
-import { useAuthContext } from "@/app/providers";
+import { useAuthContext, useLang } from "@/app/providers";
 import { mockBudgets, mockExpenditures, mockEvents } from "@/lib/mockData";
 import { isEcOfficer } from "@/lib/auth";
 import { formatDate, formatCurrency, cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { Budget, Expenditure } from "@/types";
 
 export default function EcFinancePage() {
   const { user, can } = useAuthContext();
+  const { t } = useLang();
   const router = useRouter();
   const toast = useToast();
 
@@ -54,7 +55,7 @@ export default function EcFinancePage() {
     setBForm({ totalAmountBdt: "", eventId: "", notes: "" });
     setLoading(false);
     setBudgetModalOpen(false);
-    toast.success("Budget created and pending approval.");
+    toast.success(t("ecPanel.finance.createBudgetTitle") + ".");
   }
 
   async function approveBudget() {
@@ -64,7 +65,7 @@ export default function EcFinancePage() {
     setBudgets((prev) => prev.map((b) => (b.id === approveTarget.id ? { ...b, status: "approved" as const } : b)));
     setLoading(false);
     setApproveTarget(null);
-    toast.success("Budget approved.");
+    toast.success(t("finance.approve") + ".");
   }
 
   async function logExpenditure(e: React.FormEvent) {
@@ -84,12 +85,14 @@ export default function EcFinancePage() {
     setEForm({ budgetId: "", amountBdt: "", category: "", description: "", expenseDate: "" });
     setLoading(false);
     setExpenseModalOpen(false);
-    toast.success("Expenditure logged.");
+    toast.success(t("finance.logExpenditure") + ".");
   }
 
   const totalBudget = budgets.filter((b) => b.status === "approved").reduce((sum, b) => sum + b.totalAmountBdt, 0);
   const totalSpent = expenditures.reduce((sum, e) => sum + e.amountBdt, 0);
   const remaining = totalBudget - totalSpent;
+
+  const EXPENSE_CATEGORIES = ["Refreshments", "Stationery", "Printing", "Transport", "Equipment", "Venue", "Other"];
 
   return (
     <PageLayout>
@@ -99,10 +102,10 @@ export default function EcFinancePage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
               <div>
-                <button onClick={() => router.push("/ec")} className="text-xs text-gray-400 hover:text-primary mb-1">← EC Panel</button>
+                <button onClick={() => router.push("/ec")} className="text-xs text-gray-400 hover:text-primary mb-1">{t("ecPanel.backToPanel")}</button>
                 <h1 className="font-heading text-3xl font-bold text-primary dark:text-white flex items-center gap-3">
                   <DollarSign className="w-7 h-7 text-green-500" />
-                  Finance
+                  {t("finance.title")}
                 </h1>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -112,7 +115,7 @@ export default function EcFinancePage() {
                     size="sm"
                     leftIcon={<Download className="w-4 h-4" />}
                     onClick={() => exportToCSV(expenditures, budgets, `expenditure-report-${new Date().toISOString().split("T")[0]}.csv`)}
-                    title="Download as CSV"
+                    title="CSV"
                   >
                     CSV
                   </Button>
@@ -121,7 +124,7 @@ export default function EcFinancePage() {
                     size="sm"
                     leftIcon={<Download className="w-4 h-4" />}
                     onClick={() => exportToExcel(expenditures, budgets, `expenditure-report-${new Date().toISOString().split("T")[0]}.xlsx`)}
-                    title="Download as Excel"
+                    title="Excel"
                   >
                     Excel
                   </Button>
@@ -130,26 +133,26 @@ export default function EcFinancePage() {
                     size="sm"
                     leftIcon={<Download className="w-4 h-4" />}
                     onClick={() => exportToPDF(expenditures, budgets, totalSpent, `expenditure-report-${new Date().toISOString().split("T")[0]}.pdf`)}
-                    title="Download as PDF"
+                    title="PDF"
                   >
                     PDF
                   </Button>
                 </div>
                 <Button variant="ghost" leftIcon={<TrendingDown className="w-4 h-4" />} onClick={() => setExpenseModalOpen(true)} size="sm">
-                  Log Expense
+                  {t("ecPanel.finance.logExpense")}
                 </Button>
                 <Button leftIcon={<Plus className="w-4 h-4" />} onClick={() => setBudgetModalOpen(true)} size="sm">
-                  New Budget
+                  {t("ecPanel.finance.newBudget")}
                 </Button>
               </div>
             </div>
 
-            {/* Summary — 1 col on mobile, 3 on sm+ */}
+            {/* Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               {[
-                { label: "Total Approved", value: formatCurrency(totalBudget), color: "text-green-600", icon: "💰" },
-                { label: "Total Spent", value: formatCurrency(totalSpent), color: "text-red-500", icon: "📤" },
-                { label: "Remaining", value: formatCurrency(remaining), color: remaining >= 0 ? "text-blue-600" : "text-red-600", icon: "💳" },
+                { label: t("ecPanel.finance.totalApproved"), value: formatCurrency(totalBudget), color: "text-green-600", icon: "💰" },
+                { label: t("ecPanel.finance.totalSpent"), value: formatCurrency(totalSpent), color: "text-red-500", icon: "📤" },
+                { label: t("ecPanel.finance.remaining"), value: formatCurrency(remaining), color: remaining >= 0 ? "text-blue-600" : "text-red-600", icon: "💳" },
               ].map((s) => (
                 <div key={s.label} className="card text-center">
                   <div className="text-2xl mb-1">{s.icon}</div>
@@ -162,7 +165,7 @@ export default function EcFinancePage() {
             {/* Budgets */}
             <div className="card mb-6">
               <h2 className="font-heading text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-green-500" /> Budgets
+                <FileText className="w-5 h-5 text-green-500" /> {t("finance.budgets")}
               </h2>
               <div className="space-y-3">
                 {budgets.map((b) => {
@@ -174,17 +177,19 @@ export default function EcFinancePage() {
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className="font-semibold text-primary text-sm">
-                            {event ? event.title : "General Term Budget"}
+                            {event ? event.title : t("ecPanel.finance.generalTermBudget")}
                           </p>
-                          <p className="text-xs text-gray-400">{formatCurrency(b.totalAmountBdt)} allocated · {formatCurrency(spent)} spent</p>
+                          <p className="text-xs text-gray-400">
+                            {formatCurrency(b.totalAmountBdt)} {t("ecPanel.finance.allocated")} · {formatCurrency(spent)} {t("ecPanel.finance.spent")}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant={b.status === "approved" ? "success" : "warning"}>
-                            {b.status}
+                            {b.status === "approved" ? t("ecPanel.finance.approved") : t("ecPanel.finance.pending")}
                           </Badge>
                           {canApprove && b.status === "pending" && (
                             <Button size="sm" variant="success" leftIcon={<CheckCircle className="w-3 h-3" />} onClick={() => setApproveTarget(b)}>
-                              Approve
+                              {t("finance.approve")}
                             </Button>
                           )}
                         </div>
@@ -195,7 +200,7 @@ export default function EcFinancePage() {
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">{pct}% utilised</p>
+                      <p className="text-xs text-gray-400 mt-1">{pct}{t("ecPanel.finance.utilised")}</p>
                     </div>
                   );
                 })}
@@ -205,7 +210,7 @@ export default function EcFinancePage() {
             {/* Expenditures */}
             <div className="card dark:bg-gray-800 dark:border-gray-700">
               <h2 className="font-heading text-lg font-semibold text-primary dark:text-white mb-4 flex items-center gap-2">
-                <TrendingDown className="w-5 h-5 text-red-400" /> Expenditure Log
+                <TrendingDown className="w-5 h-5 text-red-400" /> {t("ecPanel.finance.expenditureLog")}
               </h2>
 
               {/* Desktop table */}
@@ -213,10 +218,10 @@ export default function EcFinancePage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs text-gray-400 border-b border-slate-100 dark:border-gray-700">
-                      <th className="pb-3 font-medium">Date</th>
-                      <th className="pb-3 font-medium">Category</th>
-                      <th className="pb-3 font-medium">Description</th>
-                      <th className="pb-3 font-medium text-right">Amount</th>
+                      <th className="pb-3 font-medium">{t("ecPanel.finance.date")}</th>
+                      <th className="pb-3 font-medium">{t("ecPanel.finance.category")}</th>
+                      <th className="pb-3 font-medium">{t("ecPanel.finance.description")}</th>
+                      <th className="pb-3 font-medium text-right">{t("finance.totalBudget")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
@@ -231,7 +236,7 @@ export default function EcFinancePage() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t border-slate-200 dark:border-gray-600">
-                      <td colSpan={3} className="pt-3 text-sm font-semibold text-primary dark:text-white">Total</td>
+                      <td colSpan={3} className="pt-3 text-sm font-semibold text-primary dark:text-white">{t("ecPanel.finance.total")}</td>
                       <td className="pt-3 text-right font-bold text-red-600">{formatCurrency(totalSpent)}</td>
                     </tr>
                   </tfoot>
@@ -258,7 +263,7 @@ export default function EcFinancePage() {
                   </div>
                 ))}
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-gray-600">
-                  <span className="text-sm font-semibold text-primary dark:text-white">Total</span>
+                  <span className="text-sm font-semibold text-primary dark:text-white">{t("ecPanel.finance.total")}</span>
                   <span className="font-bold text-red-600">{formatCurrency(totalSpent)}</span>
                 </div>
               </div>
@@ -268,9 +273,9 @@ export default function EcFinancePage() {
       </div>
 
       {/* Create Budget Modal */}
-      <Modal isOpen={budgetModalOpen} onClose={() => setBudgetModalOpen(false)} title="Create New Budget" size="md">
+      <Modal isOpen={budgetModalOpen} onClose={() => setBudgetModalOpen(false)} title={t("ecPanel.finance.createBudgetTitle")} size="md">
         <form onSubmit={createBudget} className="space-y-4">
-          <FormField label="Total Amount (BDT)" required>
+          <FormField label={t("ecPanel.finance.totalAmountLabel")} required>
             <Input
               type="number"
               min={0}
@@ -280,52 +285,52 @@ export default function EcFinancePage() {
               required
             />
           </FormField>
-          <FormField label="Associated Event (optional)">
+          <FormField label={t("ecPanel.finance.associatedEvent")}>
             <select
               value={bForm.eventId}
               onChange={(e) => setBForm((p) => ({ ...p, eventId: e.target.value }))}
               className="input-field"
             >
-              <option value="">General Term Budget</option>
+              <option value="">{t("ecPanel.finance.generalBudgetOption")}</option>
               {mockEvents.map((ev) => (
                 <option key={ev.id} value={ev.id}>{ev.title}</option>
               ))}
             </select>
           </FormField>
-          <FormField label="Notes">
+          <FormField label={t("ecPanel.finance.notes")}>
             <Textarea
               value={bForm.notes}
               onChange={(e) => setBForm((p) => ({ ...p, notes: e.target.value }))}
-              placeholder="Optional notes for this budget"
+              placeholder={t("ecPanel.finance.notesPlaceholder")}
               rows={3}
             />
           </FormField>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" type="button" onClick={() => setBudgetModalOpen(false)}>Cancel</Button>
-            <Button type="submit" isLoading={loading}>Create Budget</Button>
+            <Button variant="ghost" type="button" onClick={() => setBudgetModalOpen(false)}>{t("common.cancel")}</Button>
+            <Button type="submit" isLoading={loading}>{t("ecPanel.finance.createBudgetTitle")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Log Expenditure Modal */}
-      <Modal isOpen={expenseModalOpen} onClose={() => setExpenseModalOpen(false)} title="Log Expenditure" size="md">
+      <Modal isOpen={expenseModalOpen} onClose={() => setExpenseModalOpen(false)} title={t("ecPanel.finance.logExpenseTitle")} size="md">
         <form onSubmit={logExpenditure} className="space-y-4">
-          <FormField label="Budget" required>
+          <FormField label={t("ecPanel.finance.budget")} required>
             <select
               value={eForm.budgetId}
               onChange={(e) => setEForm((p) => ({ ...p, budgetId: e.target.value }))}
               required
               className="input-field"
             >
-              <option value="">Select budget…</option>
+              <option value="">{t("ecPanel.finance.selectBudget")}</option>
               {budgets.filter((b) => b.status === "approved").map((b) => {
                 const ev = mockEvents.find((e) => e.id === b.eventId);
-                return <option key={b.id} value={b.id}>{ev ? ev.title : "General Term Budget"} ({formatCurrency(b.totalAmountBdt)})</option>;
+                return <option key={b.id} value={b.id}>{ev ? ev.title : t("ecPanel.finance.generalBudgetOption")} ({formatCurrency(b.totalAmountBdt)})</option>;
               })}
             </select>
           </FormField>
           <div className="grid grid-cols-2 gap-4">
-            <FormField label="Amount (BDT)" required>
+            <FormField label={t("ecPanel.finance.amountLabel")} required>
               <Input
                 type="number"
                 min={1}
@@ -335,24 +340,24 @@ export default function EcFinancePage() {
                 required
               />
             </FormField>
-            <FormField label="Category" required>
+            <FormField label={t("ecPanel.finance.category")} required>
               <select value={eForm.category} onChange={(e) => setEForm((p) => ({ ...p, category: e.target.value }))} required className="input-field">
-                <option value="">Select…</option>
-                {["Refreshments", "Stationery", "Printing", "Transport", "Equipment", "Venue", "Other"].map((c) => (
+                <option value="">{t("ecPanel.finance.selectCategory")}</option>
+                {EXPENSE_CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </FormField>
           </div>
-          <FormField label="Description" required>
+          <FormField label={t("ecPanel.finance.description")} required>
             <Input
               value={eForm.description}
               onChange={(e) => setEForm((p) => ({ ...p, description: e.target.value }))}
-              placeholder="Brief description of expense"
+              placeholder={t("ecPanel.finance.descriptionPlaceholder")}
               required
             />
           </FormField>
-          <FormField label="Expense Date" required>
+          <FormField label={t("ecPanel.finance.expenseDate")} required>
             <Input
               type="date"
               value={eForm.expenseDate}
@@ -361,8 +366,8 @@ export default function EcFinancePage() {
             />
           </FormField>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" type="button" onClick={() => setExpenseModalOpen(false)}>Cancel</Button>
-            <Button type="submit" isLoading={loading}>Log Expenditure</Button>
+            <Button variant="ghost" type="button" onClick={() => setExpenseModalOpen(false)}>{t("common.cancel")}</Button>
+            <Button type="submit" isLoading={loading}>{t("finance.logExpenditure")}</Button>
           </div>
         </form>
       </Modal>
@@ -372,9 +377,9 @@ export default function EcFinancePage() {
         isOpen={!!approveTarget}
         onConfirm={approveBudget}
         onCancel={() => setApproveTarget(null)}
-        title="Approve Budget?"
-        message={`Approve budget of ${approveTarget ? formatCurrency(approveTarget.totalAmountBdt) : ""}? Once approved, expenditures can be logged against it.`}
-        confirmLabel="Approve"
+        title={t("ecPanel.finance.approveBudgetTitle")}
+        message={`${approveTarget ? formatCurrency(approveTarget.totalAmountBdt) : ""}? ${t("ecPanel.finance.approveMessage")}`}
+        confirmLabel={t("ecPanel.finance.approveConfirm")}
         variant="info"
         isLoading={loading}
       />

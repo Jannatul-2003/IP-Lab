@@ -34,7 +34,7 @@ function HeroSection() {
   ];
 
   return (
-    <section ref={ref} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-hero">
+    <section ref={ref} className="relative min-h-screen flex flex-col items-center justify-center overflow-visible bg-hero pb-16">
       <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `linear-gradient(rgba(46,117,182,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(46,117,182,0.5) 1px, transparent 1px)`, backgroundSize: "60px 60px" }} />
       <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-accent/15 blur-3xl animate-pulse" />
       <div className="absolute bottom-1/4 right-1/3 w-72 h-72 rounded-full bg-primary/30 blur-3xl animate-pulse" style={{ animationDelay: "1.5s" }} />
@@ -55,7 +55,7 @@ function HeroSection() {
           {t("hero.subtitle")}
         </motion.p>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.45 }} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.45 }} className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 sm:mb-16">
           <Link href="/events">
             <Button size="lg" className="bg-white text-primary hover:bg-white/90 shadow-2xl font-semibold px-8" rightIcon={<ArrowRight className="w-5 h-5" />}>
               {t("hero.cta")}
@@ -68,12 +68,12 @@ function HeroSection() {
           </Link>
         </motion.div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-3xl mx-auto">
           {stats.map((stat, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 + i * 0.1 }} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 text-center">
-              <div className="text-2xl mb-1">{stat.icon}</div>
-              <div className="font-heading text-2xl font-bold text-white">{stat.value}</div>
-              <div className="text-xs text-white/50 mt-1">{stat.label}</div>
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 + i * 0.1 }} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-2 sm:p-4 text-center">
+              <div className="text-lg sm:text-2xl mb-0.5 sm:mb-1">{stat.icon}</div>
+              <div className="font-heading text-base sm:text-2xl font-bold text-white">{stat.value}</div>
+              <div className="text-[10px] sm:text-xs text-white/50 mt-0.5 sm:mt-1 leading-tight">{stat.label}</div>
             </motion.div>
           ))}
         </div>
@@ -87,32 +87,33 @@ function HeroSection() {
 }
 
 function FeaturesSection() {
+  const { t } = useLang();
   const features = [
-    { icon: <Calendar className="w-6 h-6 text-accent" />, title: "Events & Workshops", desc: "Programming contests, tech talks, workshops, and sports — all in one place." },
-    { icon: <Trophy className="w-6 h-6 text-accent" />, title: "Democratic Elections", desc: "Constitutional two-phase elections for every Executive Committee position." },
-    { icon: <Users className="w-6 h-6 text-accent" />, title: "Vibrant Community", desc: "Connect with 300+ active members across all CSE batches at University of Dhaka." },
-    { icon: <BookOpen className="w-6 h-6 text-accent" />, title: "Official Notices", desc: "Stay informed with timely announcements from the Executive Committee." },
-    { icon: <Zap className="w-6 h-6 text-accent" />, title: "Volunteer Roles", desc: "Lead events as a club volunteer. Build skills. Make an impact." },
-    { icon: <Shield className="w-6 h-6 text-accent" />, title: "Transparent Finance", desc: "Immutable financial records. Full accountability to every member." },
+    { icon: <Calendar className="w-6 h-6 text-accent dark:text-sky-300" />, title: t("features.events.title"), desc: t("features.events.desc") },
+    { icon: <Trophy className="w-6 h-6 text-accent dark:text-sky-300" />, title: t("features.elections.title"), desc: t("features.elections.desc") },
+    { icon: <Users className="w-6 h-6 text-accent dark:text-sky-300" />, title: t("features.community.title"), desc: t("features.community.desc") },
+    { icon: <BookOpen className="w-6 h-6 text-accent dark:text-sky-300" />, title: t("features.notices.title"), desc: t("features.notices.desc") },
+    { icon: <Zap className="w-6 h-6 text-accent dark:text-sky-300" />, title: t("features.volunteers.title"), desc: t("features.volunteers.desc") },
+    { icon: <Shield className="w-6 h-6 text-accent dark:text-sky-300" />, title: t("features.finance.title"), desc: t("features.finance.desc") },
   ];
 
   return (
-    <section className="py-24 bg-white">
+    <section className="py-24 bg-white dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <FadeInSection>
           <div className="text-center mb-16">
-            <span className="badge bg-surface text-accent mb-4 inline-block">Why CSEDUSC?</span>
-            <h2 className="font-heading text-4xl md:text-5xl font-bold text-primary">Everything in One Portal</h2>
-            <p className="text-gray-500 text-lg mt-3 max-w-xl mx-auto">Managed transparently, built for CSEDU students.</p>
+            <span className="badge bg-surface text-accent mb-4 inline-block">{t("features.badge")}</span>
+            <h2 className="font-heading text-4xl md:text-5xl font-bold text-primary dark:text-gray-100">{t("features.title")}</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-lg mt-3 max-w-xl mx-auto">{t("features.subtitle")}</p>
           </div>
         </FadeInSection>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f, i) => (
             <FadeInSection key={i} delay={i * 0.07}>
               <div className="group card hover:border-accent/30">
-                <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center mb-4 group-hover:bg-accent/10 transition-colors">{f.icon}</div>
-                <h3 className="font-heading text-xl font-semibold text-primary mb-2">{f.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{f.desc}</p>
+                <div className="w-12 h-12 rounded-xl bg-surface dark:bg-accent/20 flex items-center justify-center mb-4 group-hover:bg-accent/10 dark:group-hover:bg-accent/30 transition-colors">{f.icon}</div>
+                <h3 className="font-heading text-xl font-semibold text-primary dark:text-sky-200 mb-2">{f.title}</h3>
+                <p className="text-gray-400 dark:text-gray-400 text-sm leading-relaxed">{f.desc}</p>
               </div>
             </FadeInSection>
           ))}
@@ -125,6 +126,7 @@ function FeaturesSection() {
 function EventsPreview() {
   const { t } = useLang();
   const events = mockEvents.slice(0, 3);
+  const eventTypeLabel = (type: string) => t(`events.filter.${type}`) || type;
 
   return (
     <section className="py-24 bg-slate-50">
@@ -132,11 +134,11 @@ function EventsPreview() {
         <FadeInSection>
           <div className="flex items-end justify-between mb-12">
             <div>
-              <span className="badge bg-accent/10 text-accent mb-3 inline-block">Upcoming</span>
+              <span className="badge bg-accent/10 text-accent mb-3 inline-block">{t("events.upcoming")}</span>
               <h2 className="font-heading text-4xl font-bold text-primary">{t("events.title")}</h2>
             </div>
             <Link href="/events" className="text-sm text-accent hover:text-primary font-medium flex items-center gap-1 transition-colors">
-              View all <ArrowRight className="w-4 h-4" />
+              {t("events.viewAll")} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </FadeInSection>
@@ -147,7 +149,7 @@ function EventsPreview() {
                 <div className="card h-full group-hover:border-accent/30">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-2xl">{eventTypeIcon(event.eventType)}</span>
-                    <span className="badge bg-surface text-primary capitalize text-xs">{event.eventType}</span>
+                    <span className="badge bg-surface text-primary capitalize text-xs">{eventTypeLabel(event.eventType)}</span>
                   </div>
                   <h3 className="font-heading text-lg font-semibold text-primary mb-2 group-hover:text-accent transition-colors">{event.title}</h3>
                   <p className="text-sm text-gray-400 mb-4 leading-relaxed">{truncate(event.description ?? "", 90)}</p>
@@ -176,6 +178,7 @@ function NoticesPreview() {
     Event: "bg-teal-100 text-teal-700",
   };
   const typeEmoji: Record<string, string> = { Election: "🗳", Policy: "📜", Event: "🎪", Membership: "👥", General: "📢" };
+  const noticeTypeLabel = (type: string) => t(`notices.types.${type}`) || type;
 
   return (
     <section className="py-24 bg-white">
@@ -183,11 +186,11 @@ function NoticesPreview() {
         <FadeInSection>
           <div className="flex items-end justify-between mb-12">
             <div>
-              <span className="badge bg-surface text-accent mb-3 inline-block">Official</span>
+              <span className="badge bg-surface text-accent mb-3 inline-block">{t("notices.official")}</span>
               <h2 className="font-heading text-4xl font-bold text-primary">{t("notices.title")}</h2>
             </div>
             <Link href="/notices" className="text-sm text-accent hover:text-primary font-medium flex items-center gap-1 transition-colors">
-              All notices <ArrowRight className="w-4 h-4" />
+              {t("notices.allNotices")} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </FadeInSection>
@@ -201,7 +204,7 @@ function NoticesPreview() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`badge ${typeColors[notice.noticeType] ?? "bg-gray-100 text-gray-600"}`}>{notice.noticeType}</span>
+                      <span className={`badge ${typeColors[notice.noticeType] ?? "bg-gray-100 text-gray-600"}`}>{noticeTypeLabel(notice.noticeType)}</span>
                       <span className="text-xs text-gray-400">{formatDate(notice.publishedAt)}</span>
                     </div>
                     <h3 className="font-semibold text-primary group-hover:text-accent transition-colors truncate">{notice.title}</h3>
@@ -225,14 +228,14 @@ function CtaSection() {
       <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: `radial-gradient(circle at 25px 25px, rgba(255,255,255,0.3) 2px, transparent 0)`, backgroundSize: "50px 50px" }} />
       <div className="relative max-w-3xl mx-auto px-4 text-center">
         <FadeInSection>
-          <h2 className="font-heading text-4xl md:text-5xl font-bold text-white mb-6">Ready to be part of something great?</h2>
-          <p className="text-lg text-white/55 mb-10 leading-relaxed">Join the CSEDU Students&apos; Club and connect with the brightest minds in computer science at the University of Dhaka.</p>
+          <h2 className="font-heading text-4xl md:text-5xl font-bold text-white mb-6">{t("cta.title")}</h2>
+          <p className="text-lg text-white/55 mb-10 leading-relaxed">{t("cta.subtitle")}</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/register">
               <Button size="lg" className="bg-white text-primary hover:bg-white/90 px-8 shadow-2xl" rightIcon={<ArrowRight className="w-5 h-5" />}>{t("auth.register")}</Button>
             </Link>
             <Link href="/about">
-              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10 px-8">Learn More</Button>
+              <Button variant="outline" size="lg" className="border-white/30 text-white hover:bg-white/10 px-8">{t("cta.learnMore")}</Button>
             </Link>
           </div>
         </FadeInSection>

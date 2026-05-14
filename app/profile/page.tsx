@@ -36,14 +36,12 @@ export default function ProfilePage() {
 
   const member = mockMembers.find((m) => m.userId === user?.id) ?? mockMembers[0];
 
-  // Editable fields
   const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(member.phone ?? "");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [infoSaving, setInfoSaving] = useState(false);
 
-  // Password change
   const [pw, setPw] = useState<PwForm>({ current: "", next: "", confirm: "" });
   const [pwErrors, setPwErrors] = useState<PwErrors>({});
   const [pwSaving, setPwSaving] = useState(false);
@@ -51,7 +49,6 @@ export default function ProfilePage() {
 
   if (!user) { router.push("/login"); return null; }
 
-  // ── Save contact info ──────────────────────────────────────────
   function validateInfo(): boolean {
     let ok = true;
     if (!EMAIL_RE.test(email)) { setEmailError("Enter a valid email address."); ok = false; }
@@ -67,16 +64,15 @@ export default function ProfilePage() {
     setInfoSaving(true);
     await new Promise((r) => setTimeout(r, 700));
     setInfoSaving(false);
-    toast.success("Contact information updated.");
+    toast.success(t("profile.saveChanges") + ".");
   }
 
-  // ── Change password ────────────────────────────────────────────
   function validatePw(): boolean {
     const errs: PwErrors = {};
-    if (!pw.current) errs.current = "Current password is required.";
-    if (!pw.next) errs.next = "New password is required.";
-    else if (pw.next.length < 8) errs.next = "Password must be at least 8 characters.";
-    if (pw.next !== pw.confirm) errs.confirm = "Passwords do not match.";
+    if (!pw.current) errs.current = t("profile.currentPassword") + " required.";
+    if (!pw.next) errs.next = t("profile.newPassword") + " required.";
+    else if (pw.next.length < 8) errs.next = t("profile.minChars");
+    if (pw.next !== pw.confirm) errs.confirm = t("auth.confirmPassword") + " mismatch.";
     setPwErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -89,8 +85,21 @@ export default function ProfilePage() {
     setPwSaving(false);
     setPw({ current: "", next: "", confirm: "" });
     setPwErrors({});
-    toast.success("Password changed successfully.");
+    toast.success(t("profile.updatePassword") + ".");
   }
+
+  const immutableFields = [
+    { label: t("profile.studentId"),   value: member.studentId },
+    { label: t("profile.batchYear"),   value: String(member.batchYear) },
+    { label: t("profile.memberSince"), value: member.joinedDate ? formatDate(member.joinedDate) : t("profile.pending") },
+    { label: t("profile.status"),      value: member.status },
+  ];
+
+  const pwFields: { field: keyof PwForm; label: string; placeholder: string }[] = [
+    { field: "current", label: t("profile.currentPassword"), placeholder: "••••••••" },
+    { field: "next",    label: t("profile.newPassword"),     placeholder: t("profile.minChars") },
+    { field: "confirm", label: t("profile.confirmNewPassword"), placeholder: "••••••••" },
+  ];
 
   return (
     <PageLayout>
@@ -98,7 +107,7 @@ export default function ProfilePage() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
 
-            {/* ── Profile header ── */}
+            {/* Profile header */}
             <div className="card dark:bg-gray-800 dark:border-gray-700">
               <div className="flex items-start gap-5">
                 <div className="w-20 h-20 rounded-2xl bg-accent flex items-center justify-center text-white text-2xl font-bold font-heading flex-shrink-0">
@@ -115,34 +124,28 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* ── Immutable member info ── */}
+            {/* Immutable member info */}
             <div className="card dark:bg-gray-800 dark:border-gray-700">
               <h2 className="font-heading text-lg font-semibold text-primary dark:text-white mb-5">
-                Member Information
+                {t("profile.memberInfo")}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {[
-                  { label: "Student ID",   value: member.studentId },
-                  { label: "Batch Year",   value: String(member.batchYear) },
-                  { label: "Member Since", value: member.joinedDate ? formatDate(member.joinedDate) : "Pending" },
-                  { label: "Status",       value: member.status },
-                ].map((field) => (
+                {immutableFields.map((field) => (
                   <div key={field.label}>
                     <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{field.label}</p>
                     <p className="font-medium text-primary dark:text-gray-200">{field.value}</p>
-                    <p className="text-xs text-gray-300 dark:text-gray-600 mt-0.5">Immutable field</p>
+                    <p className="text-xs text-gray-300 dark:text-gray-600 mt-0.5">{t("profile.immutableField")}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* ── Edit contact info ── */}
+            {/* Edit contact info */}
             <div className="card dark:bg-gray-800 dark:border-gray-700">
               <h2 className="font-heading text-lg font-semibold text-primary dark:text-white mb-5">
-                Edit Profile
+                {t("profile.editProfile")}
               </h2>
               <form onSubmit={handleInfoSave} noValidate className="space-y-4">
-                {/* Email */}
                 <FormField
                   label={t("auth.email")}
                   error={emailError}
@@ -162,7 +165,6 @@ export default function ProfilePage() {
                   </div>
                 </FormField>
 
-                {/* Phone */}
                 <FormField
                   label={t("auth.phone")}
                   error={phoneError}
@@ -183,53 +185,49 @@ export default function ProfilePage() {
 
                 <div className="flex justify-end">
                   <Button type="submit" isLoading={infoSaving} leftIcon={<Save className="w-4 h-4" />}>
-                    {t("common.save")} Changes
+                    {t("profile.saveChanges")}
                   </Button>
                 </div>
               </form>
             </div>
 
-            {/* ── Change password ── */}
+            {/* Change password */}
             <div className="card dark:bg-gray-800 dark:border-gray-700">
               <h2 className="font-heading text-lg font-semibold text-primary dark:text-white mb-1">
-                Change Password
+                {t("profile.changePassword")}
               </h2>
-              <p className="text-xs text-gray-400 mb-5">Leave blank if you don&apos;t want to change your password.</p>
+              <p className="text-xs text-gray-400 mb-5">{t("profile.passwordHint")}</p>
               <form onSubmit={handlePwSave} noValidate className="space-y-4">
-                {(["current", "next", "confirm"] as const).map((field) => {
-                  const labels = { current: "Current Password", next: "New Password", confirm: "Confirm New Password" };
-                  const placeholders = { current: "••••••••", next: "Min. 8 characters", confirm: "••••••••" };
-                  return (
-                    <FormField key={field} label={labels[field]} error={pwErrors[field]}>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input
-                          type={showPw[field] ? "text" : "password"}
-                          value={pw[field]}
-                          onChange={(e) => {
-                            setPw((p) => ({ ...p, [field]: e.target.value }));
-                            setPwErrors((p) => ({ ...p, [field]: undefined }));
-                          }}
-                          placeholder={placeholders[field]}
-                          error={!!pwErrors[field]}
-                          autoComplete={field === "current" ? "current-password" : "new-password"}
-                          className="pl-9 pr-11"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPw((s) => ({ ...s, [field]: !s[field] }))}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-medium"
-                          aria-label={showPw[field] ? "Hide" : "Show"}
-                        >
-                          {showPw[field] ? "Hide" : "Show"}
-                        </button>
-                      </div>
-                    </FormField>
-                  );
-                })}
+                {pwFields.map(({ field, label, placeholder }) => (
+                  <FormField key={field} label={label} error={pwErrors[field]}>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        type={showPw[field] ? "text" : "password"}
+                        value={pw[field]}
+                        onChange={(e) => {
+                          setPw((p) => ({ ...p, [field]: e.target.value }));
+                          setPwErrors((p) => ({ ...p, [field]: undefined }));
+                        }}
+                        placeholder={placeholder}
+                        error={!!pwErrors[field]}
+                        autoComplete={field === "current" ? "current-password" : "new-password"}
+                        className="pl-9 pr-11"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPw((s) => ({ ...s, [field]: !s[field] }))}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-medium"
+                        aria-label={showPw[field] ? t("profile.hide") : t("profile.show")}
+                      >
+                        {showPw[field] ? t("profile.hide") : t("profile.show")}
+                      </button>
+                    </div>
+                  </FormField>
+                ))}
                 <div className="flex justify-end">
                   <Button type="submit" isLoading={pwSaving} leftIcon={<Lock className="w-4 h-4" />}>
-                    Update Password
+                    {t("profile.updatePassword")}
                   </Button>
                 </div>
               </form>

@@ -23,14 +23,7 @@ const typeEmoji: Record<NoticeType, string> = {
   General: "📢",
 };
 
-const typeFilters: { value: "all" | NoticeType; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "General", label: "General" },
-  { value: "Election", label: "Election" },
-  { value: "Policy", label: "Policy" },
-  { value: "Membership", label: "Membership" },
-  { value: "Event", label: "Event" },
-];
+const NOTICE_TYPE_KEYS: ("all" | NoticeType)[] = ["all", "General", "Election", "Policy", "Membership", "Event"];
 
 export default function NoticesPage() {
   const { t } = useLang();
@@ -38,6 +31,9 @@ export default function NoticesPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const filtered = filter === "all" ? mockNotices : mockNotices.filter((n) => n.noticeType === filter);
+
+  const typeLabel = (type: "all" | NoticeType) =>
+    type === "all" ? t("notices.filterAll") : t(`notices.types.${type}`);
 
   return (
     <PageLayout>
@@ -47,18 +43,18 @@ export default function NoticesPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Filter chips */}
           <div className="flex items-center gap-2 flex-wrap mb-8">
-            {typeFilters.map((f) => (
+            {NOTICE_TYPE_KEYS.map((type) => (
               <button
-                key={f.value}
-                onClick={() => setFilter(f.value)}
+                key={type}
+                onClick={() => setFilter(type)}
                 className={cn(
                   "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
-                  filter === f.value
+                  filter === type
                     ? "bg-accent text-white shadow-sm"
                     : "bg-white border border-slate-200 text-gray-500 hover:border-accent/50 hover:text-accent"
                 )}
               >
-                {f.label}
+                {typeLabel(type)}
               </button>
             ))}
           </div>
@@ -97,10 +93,12 @@ export default function NoticesPage() {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className={cn("badge border", colorClass)}>{notice.noticeType}</span>
+                            <span className={cn("badge border", colorClass)}>
+                              {t(`notices.types.${notice.noticeType}`)}
+                            </span>
                             <span className="text-xs text-gray-400">{timeAgo(notice.publishedAt)}</span>
                             {notice.authorRole && (
-                              <span className="text-xs text-gray-400">· by {notice.authorRole}</span>
+                              <span className="text-xs text-gray-400">· {t("notices.by")} {notice.authorRole}</span>
                             )}
                           </div>
                           <h3 className="font-heading font-semibold text-primary text-lg leading-snug">{notice.title}</h3>

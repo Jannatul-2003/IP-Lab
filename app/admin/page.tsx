@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useToast } from "@/components/ui/Toaster";
-import { useAuthContext } from "@/app/providers";
+import { useAuthContext, useLang } from "@/app/providers";
 import { mockMembers, mockNotices, mockElection, mockBudgets, mockStats } from "@/lib/mockData";
 import { timeAgo } from "@/lib/utils";
 
@@ -39,6 +39,7 @@ const ROLE_COLOR: Record<string, string> = {
 
 export default function AdminPage() {
   const { user } = useAuthContext();
+  const { t } = useLang();
   const router = useRouter();
   const toast = useToast();
 
@@ -62,10 +63,26 @@ export default function AdminPage() {
   }
 
   const tabs = [
-    { key: "overview", label: "Overview", icon: <Activity className="w-4 h-4" /> },
-    { key: "users", label: "Users", icon: <Users className="w-4 h-4" /> },
-    { key: "audit", label: "Audit Log", icon: <Shield className="w-4 h-4" /> },
+    { key: "overview", label: t("admin.overview"), icon: <Activity className="w-4 h-4" /> },
+    { key: "users", label: t("admin.users"), icon: <Users className="w-4 h-4" /> },
+    { key: "audit", label: t("admin.auditLog"), icon: <Shield className="w-4 h-4" /> },
   ] as const;
+
+  const overviewStats = [
+    { label: t("admin.totalMembers"), value: mockStats.totalMembers, icon: "👥", color: "text-blue-600" },
+    { label: t("admin.activeEvents"), value: mockStats.activeEvents, icon: "🎪", color: "text-green-600" },
+    { label: t("admin.currentTerm"), value: `Term ${mockStats.currentTerm}`, icon: "📅", color: "text-accent" },
+    { label: t("admin.completedElections"), value: mockStats.completedElections, icon: "🗳", color: "text-purple-600" },
+  ];
+
+  const modules = [
+    { label: t("admin.memberManagement"), href: "/ec/members", icon: <Users className="w-5 h-5 text-blue-500" />, count: `${mockMembers.length} ${t("admin.members")}` },
+    { label: t("admin.electionControl"), href: "/ec/elections", icon: <Vote className="w-5 h-5 text-purple-500" />, count: mockElection.status.replace("_", " ") },
+    { label: t("admin.finance"), href: "/ec/finance", icon: <DollarSign className="w-5 h-5 text-green-500" />, count: `${mockBudgets.length} ${t("admin.budgets")}` },
+    { label: t("admin.media"), href: "/ec/media", icon: <Image className="w-5 h-5 text-orange-500" />, count: `6 ${t("admin.items")}` },
+    { label: t("admin.notices"), href: "/notices", icon: <Bell className="w-5 h-5 text-yellow-500" />, count: `${mockNotices.length} ${t("admin.notices")}` },
+    { label: t("admin.settings"), href: "#", icon: <Settings className="w-5 h-5 text-gray-400" />, count: t("admin.systemConfig") },
+  ];
 
   return (
     <PageLayout>
@@ -76,24 +93,24 @@ export default function AdminPage() {
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-1">
                 <Shield className="w-5 h-5 text-red-500" />
-                <span className="text-xs font-medium text-red-500 uppercase tracking-wider">System Administrator</span>
+                <span className="text-xs font-medium text-red-500 uppercase tracking-wider">{t("admin.systemAdmin")}</span>
               </div>
-              <h1 className="font-heading text-3xl font-bold text-primary">Admin Panel</h1>
-              <p className="text-gray-400 text-sm mt-1">Full system access — CSEDU Students&apos; Club Portal</p>
+              <h1 className="font-heading text-3xl font-bold text-primary">{t("admin.title")}</h1>
+              <p className="text-gray-400 text-sm mt-1">{t("admin.subtitle")}</p>
             </div>
 
             {/* Tabs */}
             <div className="flex gap-2 mb-6">
-              {tabs.map((t) => (
+              {tabs.map((tab) => (
                 <button
-                  key={t.key}
-                  onClick={() => setActiveTab(t.key)}
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    activeTab === t.key ? "bg-accent text-white shadow-sm" : "bg-white border border-slate-100 text-gray-500 hover:bg-slate-50"
+                    activeTab === tab.key ? "bg-accent text-white shadow-sm" : "bg-white border border-slate-100 text-gray-500 hover:bg-slate-50"
                   }`}
                 >
-                  {t.icon}
-                  {t.label}
+                  {tab.icon}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -103,12 +120,7 @@ export default function AdminPage() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                 {/* Stats grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    { label: "Total Members", value: mockStats.totalMembers, icon: "👥", color: "text-blue-600" },
-                    { label: "Active Events", value: mockStats.activeEvents, icon: "🎪", color: "text-green-600" },
-                    { label: "Current Term", value: `Term ${mockStats.currentTerm}`, icon: "📅", color: "text-accent" },
-                    { label: "Completed Elections", value: mockStats.completedElections, icon: "🗳", color: "text-purple-600" },
-                  ].map((s) => (
+                  {overviewStats.map((s) => (
                     <div key={s.label} className="card text-center">
                       <div className="text-2xl mb-1">{s.icon}</div>
                       <p className={`font-heading text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -119,14 +131,7 @@ export default function AdminPage() {
 
                 {/* Module shortcuts */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {[
-                    { label: "Member Management", href: "/ec/members", icon: <Users className="w-5 h-5 text-blue-500" />, count: `${mockMembers.length} members` },
-                    { label: "Election Control", href: "/ec/elections", icon: <Vote className="w-5 h-5 text-purple-500" />, count: mockElection.status.replace("_", " ") },
-                    { label: "Finance", href: "/ec/finance", icon: <DollarSign className="w-5 h-5 text-green-500" />, count: `${mockBudgets.length} budgets` },
-                    { label: "Media", href: "/ec/media", icon: <Image className="w-5 h-5 text-orange-500" />, count: "6 items" },
-                    { label: "Notices", href: "/notices", icon: <Bell className="w-5 h-5 text-yellow-500" />, count: `${mockNotices.length} notices` },
-                    { label: "Settings", href: "#", icon: <Settings className="w-5 h-5 text-gray-400" />, count: "System config" },
-                  ].map((mod) => (
+                  {modules.map((mod) => (
                     <button
                       key={mod.label}
                       onClick={() => mod.href !== "#" && router.push(mod.href)}
@@ -143,7 +148,7 @@ export default function AdminPage() {
 
                 {/* Recent notices */}
                 <div className="card">
-                  <h2 className="font-heading text-lg font-semibold text-primary mb-4">Recent Notices</h2>
+                  <h2 className="font-heading text-lg font-semibold text-primary mb-4">{t("admin.recentNotices")}</h2>
                   <div className="space-y-2">
                     {mockNotices.slice(0, 3).map((n) => (
                       <div key={n.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 text-sm">
@@ -165,7 +170,7 @@ export default function AdminPage() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card overflow-hidden p-0">
                 <div className="px-5 py-4 border-b border-slate-100">
                   <h2 className="font-heading text-lg font-semibold text-primary flex items-center gap-2">
-                    <Users className="w-5 h-5 text-blue-500" /> System Users
+                    <Users className="w-5 h-5 text-blue-500" /> {t("admin.systemUsers")}
                   </h2>
                 </div>
                 <div className="divide-y divide-slate-50">
@@ -176,7 +181,7 @@ export default function AdminPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-primary text-sm">{u.email}</p>
-                        <p className="text-xs text-gray-400">Last login: {timeAgo(u.lastLogin)}</p>
+                        <p className="text-xs text-gray-400">{t("admin.lastLogin")}: {timeAgo(u.lastLogin)}</p>
                       </div>
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLOR[u.role] ?? "bg-gray-100 text-gray-500"}`}>
                         {u.role}
@@ -188,7 +193,7 @@ export default function AdminPage() {
                         leftIcon={<Lock className="w-3.5 h-3.5" />}
                         onClick={() => setResetTarget(u)}
                       >
-                        Reset PW
+                        {t("admin.resetPw")}
                       </Button>
                     </div>
                   ))}
@@ -201,7 +206,7 @@ export default function AdminPage() {
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card overflow-hidden p-0">
                 <div className="px-5 py-4 border-b border-slate-100">
                   <h2 className="font-heading text-lg font-semibold text-primary flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-gray-400" /> Audit Log
+                    <Activity className="w-5 h-5 text-gray-400" /> {t("admin.auditLog")}
                   </h2>
                 </div>
                 <div className="divide-y divide-slate-50">
@@ -211,7 +216,7 @@ export default function AdminPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-primary text-sm">{log.action.replace(/_/g, " ")}</p>
                         <p className="text-xs text-gray-400">
-                          by <span className="font-medium">{log.actor}</span> · target: {log.target}
+                          {t("admin.by")} <span className="font-medium">{log.actor}</span> · {t("admin.target")}: {log.target}
                         </p>
                       </div>
                       <span className="text-xs text-gray-400 flex-shrink-0">{timeAgo(log.ts)}</span>
@@ -228,9 +233,9 @@ export default function AdminPage() {
         isOpen={!!resetTarget}
         onConfirm={handleReset}
         onCancel={() => setResetTarget(null)}
-        title="Reset Password?"
-        message={`Send a password reset email to ${resetTarget?.email}? They will receive a link to set a new password.`}
-        confirmLabel="Send Reset"
+        title={t("admin.resetPwTitle")}
+        message={`Send a password reset email to ${resetTarget?.email}?`}
+        confirmLabel={t("admin.resetPwConfirm")}
         variant="info"
         isLoading={loading}
       />

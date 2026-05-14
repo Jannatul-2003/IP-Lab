@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useToast } from "@/components/ui/Toaster";
-import { useAuthContext } from "@/app/providers";
+import { useAuthContext, useLang } from "@/app/providers";
 import { mockElection } from "@/lib/mockData";
 import { isEcOfficer } from "@/lib/auth";
 import { formatDate, cn } from "@/lib/utils";
@@ -33,15 +33,9 @@ const MOCK_RESULTS: Record<string, { id: string; name: string; studentId: string
   ],
 };
 
-const TRANSITIONS: Partial<Record<ElectionStatus, { label: string; next: ElectionStatus; color: string; icon: React.ReactNode; variant: "danger" | "info" }>> = {
-  DRAFT: { label: "Open Phase 1 Voting", next: "PHASE1_OPEN", color: "bg-purple-50 border-purple-100", icon: <Play className="w-4 h-4" />, variant: "info" },
-  PHASE1_OPEN: { label: "Close Phase 1 & Shortlist", next: "SHORTLISTING", color: "bg-orange-50 border-orange-100", icon: <Square className="w-4 h-4" />, variant: "danger" },
-  SHORTLISTING: { label: "Open Phase 2 Voting", next: "PHASE2_OPEN", color: "bg-indigo-50 border-indigo-100", icon: <Play className="w-4 h-4" />, variant: "info" },
-  PHASE2_OPEN: { label: "Close Phase 2 & Finalize", next: "COMPLETED", color: "bg-red-50 border-red-100", icon: <Trophy className="w-4 h-4" />, variant: "danger" },
-};
-
 export default function EcElectionsPage() {
   const { user, can } = useAuthContext();
+  const { t } = useLang();
   const router = useRouter();
   const toast = useToast();
 
@@ -57,15 +51,24 @@ export default function EcElectionsPage() {
   if (!user || !isEcOfficer(user.role)) return null;
 
   const canControl = can("PRESIDENT") || can("SECRETARY");
-  const transition = TRANSITIONS[status];
+
+  type TransitionDef = { label: string; next: ElectionStatus; color: string; icon: React.ReactNode; variant: "danger" | "info" };
+  const TRANSITIONS: Partial<Record<ElectionStatus, TransitionDef>> = {
+    DRAFT: { label: t("ecPanel.elections.transitions.openPhase1"), next: "PHASE1_OPEN", color: "bg-purple-50 border-purple-100", icon: <Play className="w-4 h-4" />, variant: "info" },
+    PHASE1_OPEN: { label: t("ecPanel.elections.transitions.closePhase1"), next: "SHORTLISTING", color: "bg-orange-50 border-orange-100", icon: <Square className="w-4 h-4" />, variant: "danger" },
+    SHORTLISTING: { label: t("ecPanel.elections.transitions.openPhase2"), next: "PHASE2_OPEN", color: "bg-indigo-50 border-indigo-100", icon: <Play className="w-4 h-4" />, variant: "info" },
+    PHASE2_OPEN: { label: t("ecPanel.elections.transitions.closePhase2"), next: "COMPLETED", color: "bg-red-50 border-red-100", icon: <Trophy className="w-4 h-4" />, variant: "danger" },
+  };
 
   const steps: { label: string; key: ElectionStatus }[] = [
-    { label: "Registration", key: "DRAFT" },
-    { label: "Phase 1", key: "PHASE1_OPEN" },
-    { label: "Shortlisting", key: "SHORTLISTING" },
-    { label: "Phase 2", key: "PHASE2_OPEN" },
-    { label: "Completed", key: "COMPLETED" },
+    { label: t("ecPanel.elections.steps.registration"), key: "DRAFT" },
+    { label: t("ecPanel.elections.steps.phase1"), key: "PHASE1_OPEN" },
+    { label: t("ecPanel.elections.steps.shortlisting"), key: "SHORTLISTING" },
+    { label: t("ecPanel.elections.steps.phase2"), key: "PHASE2_OPEN" },
+    { label: t("ecPanel.elections.steps.completed"), key: "COMPLETED" },
   ];
+
+  const transition = TRANSITIONS[status];
   const currentStepIdx = steps.findIndex((s) => s.key === status);
 
   async function executeTransition() {
@@ -75,7 +78,7 @@ export default function EcElectionsPage() {
     setStatus(transition.next);
     setLoading(false);
     setConfirmOpen(false);
-    toast.success(`Election phase updated to: ${transition.next.replace("_", " ")}`);
+    toast.success(`${transition.next.replace("_", " ")}`);
   }
 
   return (
@@ -85,15 +88,15 @@ export default function EcElectionsPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className="mb-8">
               <button onClick={() => router.push("/ec")} className="text-xs text-gray-400 hover:text-primary mb-1">
-                ← EC Panel
+                {t("ecPanel.backToPanel")}
               </button>
               <h1 className="font-heading text-3xl font-bold text-primary flex items-center gap-3">
                 <Vote className="w-7 h-7 text-purple-500" />
-                Election Control
+                {t("ecPanel.elections.title")}
               </h1>
               {!canControl && (
                 <p className="text-xs text-orange-500 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5" /> Phase controls require PRESIDENT or SECRETARY role.
+                  <AlertTriangle className="w-3.5 h-3.5" /> {t("ecPanel.elections.noControl")}
                 </p>
               )}
             </div>
@@ -101,9 +104,9 @@ export default function EcElectionsPage() {
             <div className="card mb-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="font-heading text-xl font-bold text-primary">EC Election 2026 — Term 8</h2>
+                  <h2 className="font-heading text-xl font-bold text-primary">{t("ecPanel.elections.ecElectionLabel")}</h2>
                   <p className="text-gray-400 text-sm mt-0.5">
-                    Phase 1: {formatDate(mockElection.phase1Start)} – {formatDate(mockElection.phase1End)}
+                    {t("ecPanel.elections.phase1Dates")} {formatDate(mockElection.phase1Start)} – {formatDate(mockElection.phase1End)}
                   </p>
                 </div>
                 <StatusBadge status={status} />
@@ -145,10 +148,11 @@ export default function EcElectionsPage() {
               >
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="font-semibold text-primary">Next Action</p>
+                    <p className="font-semibold text-primary">{t("ecPanel.elections.nextAction")}</p>
                     <p className="text-sm text-gray-400 mt-0.5">
-                      Current: <span className="font-medium text-primary">{status.replace("_", " ")}</span>
-                      {" → "}Next: <span className="font-medium text-accent">{transition.next.replace("_", " ")}</span>
+                      {t("ecPanel.elections.current")} <span className="font-medium text-primary">{status.replace("_", " ")}</span>
+                      {" → "}
+                      {t("ecPanel.elections.next")} <span className="font-medium text-accent">{transition.next.replace("_", " ")}</span>
                     </p>
                   </div>
                   <Button
@@ -166,7 +170,7 @@ export default function EcElectionsPage() {
               <div className="card mb-6 bg-green-50 border border-green-100">
                 <div className="flex items-center gap-3">
                   <Trophy className="w-6 h-6 text-green-500" />
-                  <p className="font-semibold text-green-700">Election Completed — Results Published</p>
+                  <p className="font-semibold text-green-700">{t("ecPanel.elections.completed")}</p>
                 </div>
               </div>
             )}
@@ -175,7 +179,7 @@ export default function EcElectionsPage() {
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-heading text-lg font-semibold text-primary flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-purple-500" />
-                  Live Results — Phase 1
+                  {t("ecPanel.elections.liveResults")}
                 </h2>
                 <div className="flex gap-1.5">
                   {Object.keys(MOCK_RESULTS).map((pos) => (
@@ -212,9 +216,13 @@ export default function EcElectionsPage() {
                             </span>
                             <p className="font-medium text-primary text-sm">{c.name}</p>
                             <span className="text-xs text-gray-400">{c.studentId}</span>
-                            {c.shortlisted && <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">Shortlisted</span>}
+                            {c.shortlisted && (
+                              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">
+                                {t("ecPanel.elections.shortlisted")}
+                              </span>
+                            )}
                           </div>
-                          <p className="font-bold text-primary text-sm">{c.phase1Votes} votes</p>
+                          <p className="font-bold text-primary text-sm">{c.phase1Votes} {t("ecPanel.elections.votes")}</p>
                         </div>
                         <div className="w-full bg-slate-200 rounded-full h-1.5">
                           <div
@@ -235,9 +243,9 @@ export default function EcElectionsPage() {
         isOpen={confirmOpen}
         onConfirm={executeTransition}
         onCancel={() => setConfirmOpen(false)}
-        title={`Confirm: ${transition?.label}`}
-        message={`This will transition the election from "${status.replace("_", " ")}" to "${transition?.next.replace("_", " ")}". This action cannot be undone.`}
-        confirmLabel="Confirm"
+        title={`${t("common.confirm")}: ${transition?.label}`}
+        message={`${transition?.next.replace("_", " ")}. ${t("common.thisActionIrreversible")}`}
+        confirmLabel={t("common.confirm")}
         variant={transition?.variant ?? "info"}
         isLoading={loading}
       />

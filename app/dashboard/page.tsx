@@ -65,10 +65,10 @@ export default function DashboardPage() {
 
           {/* Quick stats */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard icon={<User className="w-5 h-5 text-blue-500" />} label={t("dashboard.status")} value="Active" color="bg-blue-50" />
-            <StatCard icon={<Calendar className="w-5 h-5 text-green-500" />} label="RSVPed Events" value={`${rsvpEvents.length}`} color="bg-green-50" />
-            <StatCard icon={<Bell className="w-5 h-5 text-orange-500" />} label="New Notices" value={`${recentNotices.length}`} color="bg-orange-50" />
-            <StatCard icon={<Vote className="w-5 h-5 text-purple-500" />} label="Active Election" value={hasActiveElection ? "Yes" : "No"} color="bg-purple-50" />
+            <StatCard icon={<User className="w-5 h-5 text-blue-500" />} label={t("dashboard.status")} value={t("dashboard.activeStatus")} color="bg-blue-50" />
+            <StatCard icon={<Calendar className="w-5 h-5 text-green-500" />} label={t("dashboard.rsvpedEventsLabel")} value={`${rsvpEvents.length}`} color="bg-green-50" />
+            <StatCard icon={<Bell className="w-5 h-5 text-orange-500" />} label={t("dashboard.newNotices")} value={`${recentNotices.length}`} color="bg-orange-50" />
+            <StatCard icon={<Vote className="w-5 h-5 text-purple-500" />} label={t("dashboard.activeElectionLabel")} value={hasActiveElection ? t("dashboard.yes") : t("dashboard.no")} color="bg-purple-50" />
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -80,12 +80,12 @@ export default function DashboardPage() {
                     <Vote className="w-8 h-8 flex-shrink-0" />
                     <div>
                       <p className="font-semibold">{t("dashboard.activeElection")}</p>
-                      <p className="text-white/70 text-sm">EC Election 2026 — Phase 1 is open. Cast your vote!</p>
+                      <p className="text-white/70 text-sm">{t("dashboard.electionBannerDesc")}</p>
                     </div>
                   </div>
                   <Link href="/elections">
                     <Button className="bg-white text-purple-700 hover:bg-white/90 flex-shrink-0" size="sm">
-                      Vote Now
+                      {t("dashboard.voteNow")}
                     </Button>
                   </Link>
                 </div>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
               <div className="card">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="font-heading text-xl font-semibold text-primary">{t("dashboard.upcomingEvents")}</h2>
-                  <Link href="/events" className="text-xs text-accent hover:underline">View all</Link>
+                  <Link href="/events" className="text-xs text-accent hover:underline">{t("dashboard.viewAll")}</Link>
                 </div>
                 {rsvpEvents.length === 0 ? (
                   <div className="text-center py-10">
@@ -133,7 +133,7 @@ export default function DashboardPage() {
               <div className="card">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="font-heading text-xl font-semibold text-primary">{t("dashboard.recentNotices")}</h2>
-                  <Link href="/notices" className="text-xs text-accent hover:underline">All</Link>
+                  <Link href="/notices" className="text-xs text-accent hover:underline">{t("dashboard.all")}</Link>
                 </div>
                 <div className="space-y-4">
                   {recentNotices.map((notice) => (
@@ -164,8 +164,8 @@ export default function DashboardPage() {
                       <User className="w-5 h-5 text-accent" />
                     </div>
                     <div>
-                      <p className="font-semibold text-primary text-sm">EC Management Panel</p>
-                      <p className="text-xs text-gray-400">Manage members, elections, finance, and media.</p>
+                      <p className="font-semibold text-primary text-sm">{t("dashboard.ecPanelTitle")}</p>
+                      <p className="text-xs text-gray-400">{t("dashboard.ecPanelDesc")}</p>
                     </div>
                   </div>
                   <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-accent transition-colors" />

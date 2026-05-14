@@ -34,7 +34,7 @@ export default function EventDetailPage() {
     await new Promise((r) => setTimeout(r, 600));
     setIsRsvpd(true);
     setLoading(false);
-    toast.success("You're registered for this event!");
+    toast.success(t("events.rsvpd") + "!");
   }
 
   async function handleCancelRsvp() {
@@ -43,7 +43,7 @@ export default function EventDetailPage() {
     setIsRsvpd(false);
     setLoading(false);
     setConfirmOpen(false);
-    toast.success("RSVP cancelled.");
+    toast.success(t("events.cancelRsvp") + ".");
   }
 
   return (
@@ -51,7 +51,7 @@ export default function EventDetailPage() {
       <div className="pt-20 pb-16 bg-slate-50 min-h-screen">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-400 hover:text-primary transition-colors mb-6 text-sm">
-            <ArrowLeft className="w-4 h-4" /> Back to Events
+            <ArrowLeft className="w-4 h-4" /> {t("events.backToEvents")}
           </button>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
@@ -60,7 +60,7 @@ export default function EventDetailPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-3xl">{eventTypeIcon(event.eventType)}</span>
-                  <span className="badge bg-surface text-primary capitalize">{event.eventType}</span>
+                  <span className="badge bg-surface text-primary capitalize">{t(`events.filter.${event.eventType}`)}</span>
                   <StatusBadge status={event.status} />
                 </div>
                 <h1 className="font-heading text-3xl font-bold text-primary leading-tight">{event.title}</h1>
@@ -74,7 +74,7 @@ export default function EventDetailPage() {
                   <Calendar className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Date & Time</p>
+                  <p className="text-xs text-gray-400">{t("events.dateTime")}</p>
                   <p className="font-medium text-primary text-sm">{formatDate(event.eventDate, "dd MMM yyyy")}</p>
                   <p className="text-xs text-gray-500">{formatDate(event.eventDate, "hh:mm a")}</p>
                 </div>
@@ -85,7 +85,7 @@ export default function EventDetailPage() {
                     <MapPin className="w-5 h-5 text-green-500" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400">Venue</p>
+                    <p className="text-xs text-gray-400">{t("events.venue")}</p>
                     <p className="font-medium text-primary text-sm">{event.venue}</p>
                   </div>
                 </div>
@@ -95,7 +95,7 @@ export default function EventDetailPage() {
                   <Users className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Capacity</p>
+                  <p className="text-xs text-gray-400">{t("events.capacity")}</p>
                   <p className="font-medium text-primary text-sm">{event.rsvpCount} / {event.capacity}</p>
                   <div className="h-1 w-20 bg-slate-200 rounded-full mt-1 overflow-hidden">
                     <div className={cn("h-full rounded-full", pct >= 90 ? "bg-red-400" : "bg-green-400")} style={{ width: `${pct}%` }} />
@@ -107,7 +107,7 @@ export default function EventDetailPage() {
             {/* Description */}
             {event.description && (
               <div className="mb-6">
-                <h2 className="font-heading text-lg font-semibold text-primary mb-3">About this Event</h2>
+                <h2 className="font-heading text-lg font-semibold text-primary mb-3">{t("events.about")}</h2>
                 <p className="text-gray-500 leading-relaxed">{event.description}</p>
               </div>
             )}
@@ -115,7 +115,7 @@ export default function EventDetailPage() {
             {/* RSVP deadline */}
             {event.rsvpDeadline && (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl mb-6 text-sm text-yellow-700">
-                <strong>RSVP Deadline:</strong> {formatDate(event.rsvpDeadline, "dd MMM yyyy, hh:mm a")}
+                <strong>{t("events.rsvpDeadline")}:</strong> {formatDate(event.rsvpDeadline, "dd MMM yyyy, hh:mm a")}
               </div>
             )}
 
@@ -132,10 +132,10 @@ export default function EventDetailPage() {
                   {isRsvpd ? t("events.rsvpd") : t("events.rsvp")}
                 </Button>
               )}
-              {isFull && <span className="text-red-500 font-medium text-sm">This event is at full capacity.</span>}
+              {isFull && <span className="text-red-500 font-medium text-sm">{t("events.fullCapacity")}</span>}
               {!user && event.status === "PUBLISHED" && (
                 <p className="text-sm text-gray-400">
-                  <a href="/login" className="text-accent hover:underline">Sign in</a> to RSVP
+                  <a href="/login" className="text-accent hover:underline">{t("events.signIn")}</a> {t("events.signInToRsvp")}
                 </p>
               )}
             </div>
@@ -147,9 +147,9 @@ export default function EventDetailPage() {
         isOpen={confirmOpen}
         onConfirm={handleCancelRsvp}
         onCancel={() => setConfirmOpen(false)}
-        title="Cancel RSVP?"
-        message="Are you sure you want to cancel your registration for this event? This action cannot be undone."
-        confirmLabel="Yes, Cancel"
+        title={t("events.cancelRsvpTitle")}
+        message={t("events.cancelRsvpMessage")}
+        confirmLabel={t("events.cancelRsvpConfirm")}
         isLoading={loading}
       />
     </PageLayout>
