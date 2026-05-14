@@ -1,9 +1,20 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { User, Language } from "@/types";
 import { getStoredUser, clearAuth, hasRole } from "@/lib/auth";
 import { translations } from "@/i18n";
 import { UserRole } from "@/types";
+
+export type Theme = "light" | "dark";
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: "notice" | "event" | "election" | "system";
+  read: boolean;
+  createdAt: string;
+}
 
 interface AuthCtx {
   user: User | null;
@@ -18,6 +29,19 @@ interface LangCtx {
   setLang: (l: Language) => void;
   toggle: () => void;
   t: (key: string) => string;
+}
+
+interface ThemeCtx {
+  theme: Theme;
+  toggleTheme: () => void;
+}
+
+interface NotifCtx {
+  notifications: AppNotification[];
+  unreadCount: number;
+  markRead: (id: string) => void;
+  markAllRead: () => void;
+  addNotification: (n: Omit<AppNotification, "id" | "read" | "createdAt">) => void;
 }
 
 const AuthContext = createContext<AuthCtx>({
@@ -35,30 +59,65 @@ const LangContext = createContext<LangCtx>({
   t: (k) => k,
 });
 
-export function useAuthContext() {
-  return useContext(AuthContext);
-}
+const ThemeContext = createContext<ThemeCtx>({
+  theme: "light",
+  toggleTheme: () => {},
+});
 
-export function useLang() {
-  return useContext(LangContext);
-}
+const NotifContext = createContext<NotifCtx>({
+  notifications: [],
+  unreadCount: 0,
+  markRead: () => {},
+  markAllRead: () => {},
+  addNotification: () => {},
+});
+
+export function useAuthContext() { return useContext(AuthContext); }
+export function useLang() { return useContext(LangContext); }
+export function useTheme() { return useContext(ThemeContext); }
+export function useNotifications() { return useContext(NotifContext); }
+
+const MOCK_NOTIFICATIONS: AppNotification[] = [
+  { id: "n1", title: "New Notice Posted", message: "Term 8 EC election dates announced.", type: "election", read: false, createdAt: new Date(Date.now() - 3600000).toISOString() },
+  { id: "n2", title: "Event Reminder", message: "Tech Talk with ML starts tomorrow at 3 PM.", type: "event", read: false, createdAt: new Date(Date.now() - 7200000).toISOString() },
+  { id: "n3", title: "Membership Approved", message: "Your membership application has been approved.", type: "notice", read: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
+];
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lang, setLangState] = useState<Language>("en");
+  const [theme, setThemeState] = useState<Theme>("light");
+  const [notifications, setNotifications] = useState<AppNotification[]>(MOCK_NOTIFICATIONS);
 
   useEffect(() => {
     const stored = getStoredUser();
     setUserState(stored);
     setIsLoading(false);
+
+    // Restore language preference
     const storedLang = localStorage.getItem("csedusc_lang") as Language | null;
     if (storedLang === "en" || storedLang === "bn") setLangState(storedLang);
+
+    // Restore theme preference
+    const storedTheme = localStorage.getItem("csedusc_theme") as Theme | null;
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const resolved = storedTheme ?? (prefersDark ? "dark" : "light");
+    setThemeState(resolved);
   }, []);
 
-  function setUser(u: User | null) {
-    setUserState(u);
-  }
+  // Apply dark class to <html> whenever theme changes
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("csedusc_theme", theme);
+  }, [theme]);
+
+  // Apply lang attribute for correct font rendering
+  useEffect(() => {
+    document.documentElement.lang = lang === "bn" ? "bn" : "en";
+  }, [lang]);
+
+  function setUser(u: User | null) { setUserState(u); }
 
   function logout() {
     clearAuth();
@@ -76,9 +135,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     localStorage.setItem("csedusc_lang", l);
   }
 
-  function toggle() {
-    setLang(lang === "en" ? "bn" : "en");
-  }
+  function toggle() { setLang(lang === "en" ? "bn" : "en"); }
 
   function t(key: string): string {
     const dict = translations[lang];
@@ -92,10 +149,38 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return typeof value === "string" ? value : key;
   }
 
+  function toggleTheme() {
+    setThemeState((prev) => (prev === "light" ? "dark" : "light"));
+  }
+
+  const markRead = useCallback((id: string) => {
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  }, []);
+
+  const markAllRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  }, []);
+
+  const addNotification = useCallback((n: Omit<AppNotification, "id" | "read" | "createdAt">) => {
+    const newN: AppNotification = {
+      ...n,
+      id: `n${Date.now()}`,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    setNotifications((prev) => [newN, ...prev]);
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   return (
     <AuthContext.Provider value={{ user, isLoading, setUser, logout, can }}>
       <LangContext.Provider value={{ lang, setLang, toggle, t }}>
-        {children}
+        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+          <NotifContext.Provider value={{ notifications, unreadCount, markRead, markAllRead, addNotification }}>
+            {children}
+          </NotifContext.Provider>
+        </ThemeContext.Provider>
       </LangContext.Provider>
     </AuthContext.Provider>
   );

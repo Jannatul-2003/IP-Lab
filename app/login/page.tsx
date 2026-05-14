@@ -120,6 +120,13 @@ export default function LoginPage() {
               </div>
             </FormField>
 
+            {/* Forgot password link */}
+            <div className="flex justify-end -mt-2">
+              <Link href="/forgot-password" className="text-xs text-accent hover:underline font-medium">
+                {t("auth.forgotPassword")}
+              </Link>
+            </div>
+
             <Button type="submit" className="w-full" size="lg" isLoading={loading}>
               {t("auth.login")}
             </Button>

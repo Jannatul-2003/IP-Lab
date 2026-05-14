@@ -12,6 +12,21 @@
   --gold: #C9A84C;
 }
 
+/* Dark mode base overrides */
+.dark body {
+  background-color: #0d1117;
+  color: #e6edf3;
+}
+.dark .card {
+  @apply bg-gray-800 border-gray-700 text-gray-100;
+}
+.dark .input-field {
+  @apply bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-500;
+}
+.dark ::-webkit-scrollbar-track { background: #1e2736; }
+.dark ::-webkit-scrollbar-thumb { background: #374151; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { scroll-behavior: smooth; scroll-padding-top: 80px; }

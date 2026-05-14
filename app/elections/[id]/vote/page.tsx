@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Vote, Check, ArrowLeft, Lock } from "lucide-react";
+import { Vote, Check, ArrowLeft, Lock, ChevronLeft } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -93,33 +93,59 @@ export default function VotingPage() {
 
           {/* Header */}
           <div className="card mb-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Vote className="w-6 h-6 text-purple-500" />
+            <div className="flex items-center gap-3 mb-5">
+              <Vote className="w-6 h-6 text-purple-500 flex-shrink-0" />
               <div>
-                <h1 className="font-heading text-xl font-bold text-primary">
+                <h1 className="font-heading text-xl font-bold text-primary dark:text-white">
                   {mockElection.status === "PHASE1_OPEN" ? t("elections.phase1") : t("elections.phase2")}
                 </h1>
                 <p className="text-xs text-gray-400">EC Election 2026 — Term 8</p>
               </div>
             </div>
-            {/* Progress */}
-            <div className="flex gap-1.5">
-              {POSITIONS.map((p, i) => (
-                <div
-                  key={p}
-                  onClick={() => setCurrentPos(i)}
-                  className={cn(
-                    "flex-1 h-2 rounded-full cursor-pointer transition-all",
-                    i === currentPos ? "bg-accent" :
-                    votes[p] ? "bg-green-400" : "bg-slate-100"
-                  )}
-                  title={p}
-                />
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 mt-2">
-              Position {currentPos + 1} of {POSITIONS.length}: <strong>{position}</strong>
-            </p>
+
+            {/* ── Labeled step indicator ── */}
+            <nav aria-label="Voting steps">
+              <ol className="flex items-start">
+                {POSITIONS.map((p, i) => {
+                  const done = votes[p] && i !== currentPos;
+                  const active = i === currentPos;
+                  const isLast = i === POSITIONS.length - 1;
+                  return (
+                    <React.Fragment key={p}>
+                      <li className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={() => votes[p] || i <= currentPos ? setCurrentPos(i) : undefined}
+                          aria-current={active ? "step" : undefined}
+                          aria-label={`Step ${i + 1}: ${p}`}
+                          className={cn(
+                            "w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all",
+                            done
+                              ? "bg-green-500 border-green-500 text-white cursor-pointer hover:bg-green-600"
+                              : active
+                              ? "bg-accent border-accent text-white"
+                              : "bg-slate-100 border-slate-200 text-gray-400 cursor-default"
+                          )}
+                        >
+                          {done ? <Check className="w-4 h-4" /> : i + 1}
+                        </button>
+                        <span className={cn(
+                          "text-[10px] font-medium text-center leading-tight max-w-[64px]",
+                          active ? "text-accent" : done ? "text-green-600" : "text-gray-400"
+                        )}>
+                          {p}
+                        </span>
+                      </li>
+                      {!isLast && (
+                        <div className={cn(
+                          "flex-1 h-0.5 mt-[18px] mx-1 transition-colors",
+                          votes[p] ? "bg-green-400" : "bg-slate-200"
+                        )} />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </ol>
+            </nav>
           </div>
 
           {/* Candidates */}
@@ -160,15 +186,16 @@ export default function VotingPage() {
             })}
           </motion.div>
 
-          {/* Navigation */}
+          {/* ── Navigation: Back + Next/Submit ── */}
           <div className="flex gap-3">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => setCurrentPos((p) => Math.max(0, p - 1))}
               disabled={currentPos === 0}
               className="flex-1"
+              leftIcon={<ChevronLeft className="w-4 h-4" />}
             >
-              {t("common.previous")}
+              {t("common.back")}
             </Button>
             {currentPos < POSITIONS.length - 1 ? (
               <Button
@@ -189,9 +216,14 @@ export default function VotingPage() {
             )}
           </div>
 
-          {!allVoted && (
+          {!votes[position] && (
             <p className="text-center text-xs text-gray-400 mt-3">
-              Vote for all {POSITIONS.length} positions to submit.
+              Select a candidate to continue.
+            </p>
+          )}
+          {votes[position] && !allVoted && (
+            <p className="text-center text-xs text-gray-400 mt-3">
+              {POSITIONS.length - Object.keys(votes).length} position(s) remaining.
             </p>
           )}
         </div>

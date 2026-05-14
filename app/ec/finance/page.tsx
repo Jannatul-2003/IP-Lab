@@ -97,16 +97,16 @@ export default function EcFinancePage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
               <div>
                 <button onClick={() => router.push("/ec")} className="text-xs text-gray-400 hover:text-primary mb-1">← EC Panel</button>
-                <h1 className="font-heading text-3xl font-bold text-primary flex items-center gap-3">
+                <h1 className="font-heading text-3xl font-bold text-primary dark:text-white flex items-center gap-3">
                   <DollarSign className="w-7 h-7 text-green-500" />
                   Finance
                 </h1>
               </div>
-              <div className="flex gap-2">
-                <div className="flex gap-1 border-r border-slate-200 pr-2">
+              <div className="flex flex-wrap gap-2">
+                <div className="flex gap-1 border-r border-slate-200 dark:border-gray-700 pr-2">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -144,8 +144,8 @@ export default function EcFinancePage() {
               </div>
             </div>
 
-            {/* Summary */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            {/* Summary — 1 col on mobile, 3 on sm+ */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               {[
                 { label: "Total Approved", value: formatCurrency(totalBudget), color: "text-green-600", icon: "💰" },
                 { label: "Total Spent", value: formatCurrency(totalSpent), color: "text-red-500", icon: "📤" },
@@ -203,39 +203,64 @@ export default function EcFinancePage() {
             </div>
 
             {/* Expenditures */}
-            <div className="card">
-              <h2 className="font-heading text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+            <div className="card dark:bg-gray-800 dark:border-gray-700">
+              <h2 className="font-heading text-lg font-semibold text-primary dark:text-white mb-4 flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-red-400" /> Expenditure Log
               </h2>
-              <div className="overflow-x-auto">
+
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs text-gray-400 border-b border-slate-100">
+                    <tr className="text-left text-xs text-gray-400 border-b border-slate-100 dark:border-gray-700">
                       <th className="pb-3 font-medium">Date</th>
                       <th className="pb-3 font-medium">Category</th>
                       <th className="pb-3 font-medium">Description</th>
                       <th className="pb-3 font-medium text-right">Amount</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-slate-50 dark:divide-gray-700">
                     {expenditures.map((ex) => (
-                      <tr key={ex.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3 text-gray-400 text-xs">{formatDate(ex.expenseDate)}</td>
-                        <td className="py-3">
-                          <Badge variant="outline">{ex.category}</Badge>
-                        </td>
-                        <td className="py-3 text-primary">{ex.description}</td>
-                        <td className="py-3 text-right font-semibold text-red-500">{formatCurrency(ex.amountBdt)}</td>
+                      <tr key={ex.id} className="hover:bg-slate-50/80 dark:hover:bg-gray-700/40 transition-colors">
+                        <td className="py-3 text-gray-400 text-xs whitespace-nowrap">{formatDate(ex.expenseDate)}</td>
+                        <td className="py-3"><Badge variant="outline">{ex.category}</Badge></td>
+                        <td className="py-3 text-primary dark:text-gray-200">{ex.description}</td>
+                        <td className="py-3 text-right font-semibold text-red-500 whitespace-nowrap">{formatCurrency(ex.amountBdt)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t border-slate-200">
-                      <td colSpan={3} className="pt-3 text-sm font-semibold text-primary">Total</td>
+                    <tr className="border-t border-slate-200 dark:border-gray-600">
+                      <td colSpan={3} className="pt-3 text-sm font-semibold text-primary dark:text-white">Total</td>
                       <td className="pt-3 text-right font-bold text-red-600">{formatCurrency(totalSpent)}</td>
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+
+              {/* Mobile card list */}
+              <div className="sm:hidden space-y-3">
+                {expenditures.map((ex) => (
+                  <div key={ex.id} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 dark:bg-gray-700/50">
+                    <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                      <TrendingDown className="w-4 h-4 text-red-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-primary dark:text-white truncate">{ex.description}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {formatDate(ex.expenseDate)}
+                        {ex.category ? ` · ${ex.category}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-sm font-bold text-red-500 flex-shrink-0 whitespace-nowrap">
+                      -{formatCurrency(ex.amountBdt)}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-gray-600">
+                  <span className="text-sm font-semibold text-primary dark:text-white">Total</span>
+                  <span className="font-bold text-red-600">{formatCurrency(totalSpent)}</span>
+                </div>
               </div>
             </div>
           </motion.div>
