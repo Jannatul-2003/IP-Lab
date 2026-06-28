@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if expenditure exceeds budget
-    const totalExpended = budget.expenditures.reduce((sum, exp) => sum + exp.amount_bdt, 0);
+    const totalExpended = budget.expenditures.reduce((sum: number, exp: any) => sum + exp.amount_bdt, 0);
     const newTotal = totalExpended + parseFloat(amountBdt);
 
     if (newTotal > budget.total_amount_bdt) {

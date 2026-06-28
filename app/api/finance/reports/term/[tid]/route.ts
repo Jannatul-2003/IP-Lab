@@ -21,10 +21,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
 
-    const totalBudgeted = budgets.reduce((sum, b) => sum + b.total_amount_bdt, 0);
+    const totalBudgeted = budgets.reduce((sum: number, b: any) => sum + b.total_amount_bdt, 0);
     const approvedBudgeted = budgets
-      .filter((b) => b.status === 'approved')
-      .reduce((sum, b) => sum + b.total_amount_bdt, 0);
+      .filter((b: any) => b.status === 'approved')
+      .reduce((sum: number, b: any) => sum + b.total_amount_bdt, 0);
 
     const categoryTotals: Record<string, number> = {};
     let totalSpent = 0;
@@ -36,8 +36,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    const byBudget = budgets.map((b) => {
-      const spent = b.expenditures.reduce((s, e) => s + e.amount_bdt, 0);
+    const byBudget = budgets.map((b: any) => {
+      const spent = b.expenditures.reduce((s: number, e: any) => s + e.amount_bdt, 0);
       return {
         budgetId: b.id,
         event: b.event?.title || 'General',
