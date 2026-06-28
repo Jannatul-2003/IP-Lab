@@ -195,7 +195,7 @@ export async function GET(
     return NextResponse.json(
       {
         votedFor: votes,
-        positions: votes.map((v) => `${v.position}-${v.phase}`),
+        positions: votes.map((v: any) => `${v.position}-${v.phase}`),
       },
       { status: 200 }
     );
