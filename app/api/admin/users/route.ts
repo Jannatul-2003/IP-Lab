@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json(
-      { data: users.map(({ password_hash: _, ...u }) => u), pagination: { page, limit, total, pages: Math.ceil(total / limit) } },
+      { data: users.map(({ password_hash: _password_hash, ...u }: any) => u), pagination: { page, limit, total, pages: Math.ceil(total / limit) } },
       { status: 200 }
     );
   } catch (error) {
