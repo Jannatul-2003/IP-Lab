@@ -26,11 +26,11 @@ RUN npm install --legacy-peer-deps --production=false
 # Copy source code
 COPY . .
 
-# Build the Next.js app
-RUN npm run build
-
 # Generate Prisma client
 RUN npx prisma generate
+
+# Build the Next.js app
+RUN npm run build
 
 # Stage 3: Runtime
 FROM node:20-alpine AS runner
