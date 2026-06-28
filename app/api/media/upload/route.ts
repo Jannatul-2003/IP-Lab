@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     const mediaType = file.type === 'application/pdf' ? 'pdf' : 'image';
 
-    return NextResponse.json({ url: `/uploads/${filename}`, mediaType }, { status: 201 });
+    return NextResponse.json({ url: `/api/media/serve/${filename}`, mediaType }, { status: 201 });
   } catch (error) {
     console.error('Media upload error:', error);
     return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
