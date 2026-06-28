@@ -39,7 +39,7 @@ export async function GET(
     }
 
     // Calculate totals
-    const totalExpended = budget.expenditures.reduce((sum, exp) => sum + exp.amount_bdt, 0);
+    const totalExpended = budget.expenditures.reduce((sum: number, exp: any) => sum + exp.amount_bdt, 0);
     const remaining = budget.total_amount_bdt - totalExpended;
 
     return NextResponse.json(
