@@ -41,8 +41,8 @@ ENV NODE_ENV=production
 ENV PORT=8000
 ENV HOSTNAME="0.0.0.0"
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install dumb-init and openssl for Prisma
+RUN apk add --no-cache dumb-init openssl
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
