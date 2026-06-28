@@ -1,16 +1,48 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ZoomIn } from "lucide-react";
 import { PageLayout, PageHeader } from "@/components/layout/PageLayout";
 import { useLang } from "@/app/providers";
-import { mockGallery } from "@/lib/mockData";
 import { formatDate } from "@/lib/utils";
 
 export default function GalleryPage() {
   const { t } = useLang();
   const [selected, setSelected] = useState<string | null>(null);
-  const selectedItem = mockGallery.find((i) => i.id === selected);
+  const [media, setMedia] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchMedia() {
+      try {
+        const response = await fetch('/api/media?type=image');
+        const data = await response.json();
+        setMedia(data.data || []);
+      } catch (error) {
+        console.error('Failed to fetch media:', error);
+        setMedia([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMedia();
+  }, []);
+
+  const selectedItem = media.find((i) => i.id === selected);
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <PageHeader title={t("gallery.title")} subtitle={t("gallery.subtitle")} />
+        <section className="py-16">
+          <div className="max-w-7xl mx-auto px-4 text-center text-gray-400">
+            Loading gallery...
+          </div>
+        </section>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
@@ -18,14 +50,14 @@ export default function GalleryPage() {
 
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {mockGallery.length === 0 ? (
+          {media.length === 0 ? (
             <div className="text-center py-20 text-gray-400">
               <div className="text-5xl mb-4">📷</div>
               <p>{t("gallery.noMedia")}</p>
             </div>
           ) : (
             <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-              {mockGallery.map((item, i) => (
+              {media.map((item, i) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -45,7 +77,7 @@ export default function GalleryPage() {
                   </div>
                   {item.tags && item.tags.length > 0 && (
                     <div className="absolute bottom-3 left-3 flex gap-1.5 flex-wrap">
-                      {item.tags.map((tag) => (
+                      {item.tags.map((tag: string) => (
                         <span key={tag} className="badge bg-black/50 text-white text-xs backdrop-blur-sm">{tag}</span>
                       ))}
                     </div>
@@ -88,12 +120,12 @@ export default function GalleryPage() {
               />
               {selectedItem.tags && (
                 <div className="flex gap-2 mt-3 justify-center flex-wrap">
-                  {selectedItem.tags.map((tag) => (
+                  {selectedItem.tags.map((tag: string) => (
                     <span key={tag} className="badge bg-white/10 text-white">{tag}</span>
                   ))}
                 </div>
               )}
-              <p className="text-white/40 text-xs text-center mt-2">{formatDate(selectedItem.createdAt)}</p>
+              <p className="text-white/40 text-xs text-center mt-2">{formatDate(selectedItem.created_at as string)}</p>
             </motion.div>
           </motion.div>
         )}

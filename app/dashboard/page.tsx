@@ -1,15 +1,14 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Calendar, Bell, Vote, User, ArrowRight, CheckCircle } from "lucide-react";
+import { Calendar, Bell, Vote, User, ArrowRight } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { RoleBadge } from "@/components/shared/RoleBadge";
 import { useAuthContext, useLang } from "@/app/providers";
-import { mockEvents, mockNotices, mockElection } from "@/lib/mockData";
 import { formatDate, timeAgo } from "@/lib/utils";
 
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
@@ -29,15 +28,34 @@ export default function DashboardPage() {
   const { t } = useLang();
   const router = useRouter();
 
+  const [events, setEvents] = useState<any[]>([]);
+  const [notices, setNotices] = useState<any[]>([]);
+  const [election, setElection] = useState<any>(null);
+  const [memberProfile, setMemberProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    if (!user) router.push("/login");
+    if (!user) { router.push("/login"); return; }
+    Promise.all([
+      fetch("/api/events?status=PUBLISHED&limit=5").then((r) => r.json()),
+      fetch("/api/notices?limit=3").then((r) => r.json()),
+      fetch("/api/elections").then((r) => r.json()),
+      fetch("/api/members/profile").then((r) => r.json()).catch(() => null),
+    ])
+      .then(([eventsData, noticesData, electionsData, profileData]) => {
+        setEvents(eventsData.data || []);
+        setNotices(noticesData.data || []);
+        const elList = electionsData.data || [];
+        setElection(elList.find((e: any) => e.status !== "COMPLETED") || null);
+        if (profileData && !profileData.error) setMemberProfile(profileData);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [user, router]);
 
   if (!user) return null;
 
-  const rsvpEvents = mockEvents.filter((e) => e.userRsvp);
-  const recentNotices = mockNotices.slice(0, 3);
-  const hasActiveElection = mockElection.status === "PHASE1_OPEN" || mockElection.status === "PHASE2_OPEN";
+  const hasActiveElection = election?.status === "PHASE1_OPEN" || election?.status === "PHASE2_OPEN";
 
   return (
     <PageLayout>
@@ -50,10 +68,9 @@ export default function DashboardPage() {
               <div className="relative flex items-start justify-between gap-4">
                 <div>
                   <p className="text-white/60 text-sm">{t("dashboard.welcome")},</p>
-                  <h1 className="font-heading text-2xl font-bold mt-0.5">{user.email.split("@")[0]}</h1>
+                  <h1 className="font-heading text-2xl font-bold mt-0.5">{memberProfile?.full_name || user.email.split("@")[0]}</h1>
                   <div className="flex items-center gap-2 mt-2">
                     <RoleBadge role={user.role} className="bg-white/20 text-white border-white/20" />
-                    {user.ecRole && <span className="text-xs text-white/60">· {user.ecRole}</span>}
                   </div>
                 </div>
                 <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-bold font-heading flex-shrink-0">
@@ -65,62 +82,61 @@ export default function DashboardPage() {
 
           {/* Quick stats */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <StatCard icon={<User className="w-5 h-5 text-blue-500" />} label={t("dashboard.status")} value={t("dashboard.activeStatus")} color="bg-blue-50" />
-            <StatCard icon={<Calendar className="w-5 h-5 text-green-500" />} label={t("dashboard.rsvpedEventsLabel")} value={`${rsvpEvents.length}`} color="bg-green-50" />
-            <StatCard icon={<Bell className="w-5 h-5 text-orange-500" />} label={t("dashboard.newNotices")} value={`${recentNotices.length}`} color="bg-orange-50" />
+            <StatCard icon={<User className="w-5 h-5 text-blue-500" />} label={t("dashboard.status")} value={memberProfile?.status || t("dashboard.activeStatus")} color="bg-blue-50" />
+            <StatCard icon={<Calendar className="w-5 h-5 text-green-500" />} label={t("dashboard.rsvpedEventsLabel")} value={String(events.length)} color="bg-green-50" />
+            <StatCard icon={<Bell className="w-5 h-5 text-orange-500" />} label={t("dashboard.newNotices")} value={String(notices.length)} color="bg-orange-50" />
             <StatCard icon={<Vote className="w-5 h-5 text-purple-500" />} label={t("dashboard.activeElectionLabel")} value={hasActiveElection ? t("dashboard.yes") : t("dashboard.no")} color="bg-purple-50" />
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Active Election Banner */}
-            {hasActiveElection && (
+            {hasActiveElection && election && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }} className="lg:col-span-3">
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-5 text-white flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <Vote className="w-8 h-8 flex-shrink-0" />
                     <div>
-                      <p className="font-semibold">{t("dashboard.activeElection")}</p>
-                      <p className="text-white/70 text-sm">{t("dashboard.electionBannerDesc")}</p>
+                      <p className="font-bold">{t("dashboard.activeElection")}</p>
+                      <p className="text-white/70 text-sm">{election.status.replace(/_/g, " ")} · {t("elections.termLabel")} {election.term?.term_number ?? "—"}</p>
                     </div>
                   </div>
-                  <Link href="/elections">
-                    <Button className="bg-white text-purple-700 hover:bg-white/90 flex-shrink-0" size="sm">
-                      {t("dashboard.voteNow")}
+                  <Link href={`/elections/${election.id}/vote`}>
+                    <Button variant="outline" size="sm" className="border-white text-white hover:bg-white/20">
+                      {t("elections.vote")}
                     </Button>
                   </Link>
                 </div>
               </motion.div>
             )}
 
-            {/* RSVPed Events */}
+            {/* Upcoming Events */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="lg:col-span-2">
-              <div className="card">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="font-heading text-xl font-semibold text-primary">{t("dashboard.upcomingEvents")}</h2>
-                  <Link href="/events" className="text-xs text-accent hover:underline">{t("dashboard.viewAll")}</Link>
+              <div className="card h-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-heading text-lg font-semibold text-primary flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-green-500" /> {t("dashboard.upcomingEvents")}
+                  </h2>
+                  <Link href="/events" className="text-xs text-accent hover:underline flex items-center gap-1">
+                    {t("common.viewAll")} <ArrowRight className="w-3 h-3" />
+                  </Link>
                 </div>
-                {rsvpEvents.length === 0 ? (
-                  <div className="text-center py-10">
-                    <div className="text-4xl mb-3">📅</div>
-                    <p className="text-gray-400 text-sm mb-4">{t("dashboard.noRsvps")}</p>
-                    <Link href="/events">
-                      <Button size="sm">{t("dashboard.browseEvents")}</Button>
-                    </Link>
-                  </div>
+                {loading ? (
+                  <div className="flex justify-center py-8"><div className="w-6 h-6 border-4 border-accent border-t-transparent rounded-full animate-spin" /></div>
+                ) : events.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">{t("dashboard.noEvents")}</p>
                 ) : (
                   <div className="space-y-3">
-                    {rsvpEvents.map((event) => (
-                      <Link key={event.id} href={`/events/${event.id}`} className="group block">
-                        <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                          <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-xl flex-shrink-0">
-                            <CheckCircle className="w-5 h-5 text-green-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-primary text-sm truncate group-hover:text-accent transition-colors">{event.title}</p>
-                            <p className="text-xs text-gray-400">{formatDate(event.eventDate)}</p>
-                          </div>
-                          <StatusBadge status={event.status} />
+                    {events.map((event) => (
+                      <Link key={event.id} href={`/events/${event.id}`} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group">
+                        <div className="w-10 h-10 rounded-xl bg-green-50 flex flex-col items-center justify-center flex-shrink-0 text-green-600">
+                          <span className="text-xs font-bold">{new Date(event.event_date).getDate()}</span>
+                          <span className="text-[10px]">{new Date(event.event_date).toLocaleString("en", { month: "short" })}</span>
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-primary group-hover:text-accent transition-colors truncate">{event.title}</p>
+                          <p className="text-xs text-gray-400 truncate">{event.venue} · {event._count?.event_rsvp || 0}/{event.capacity} {t("events.rsvpLabel")}</p>
+                        </div>
+                        <StatusBadge status={event.status} />
                       </Link>
                     ))}
                   </div>
@@ -130,49 +146,32 @@ export default function DashboardPage() {
 
             {/* Recent Notices */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-              <div className="card">
-                <div className="flex items-center justify-between mb-5">
-                  <h2 className="font-heading text-xl font-semibold text-primary">{t("dashboard.recentNotices")}</h2>
-                  <Link href="/notices" className="text-xs text-accent hover:underline">{t("dashboard.all")}</Link>
+              <div className="card h-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-heading text-lg font-semibold text-primary flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-orange-500" /> {t("dashboard.recentNotices")}
+                  </h2>
+                  <Link href="/notices" className="text-xs text-accent hover:underline flex items-center gap-1">
+                    {t("common.viewAll")} <ArrowRight className="w-3 h-3" />
+                  </Link>
                 </div>
-                <div className="space-y-4">
-                  {recentNotices.map((notice) => (
-                    <Link key={notice.id} href="/notices" className="group block">
-                      <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-surface flex items-center justify-center text-sm flex-shrink-0">
-                          {notice.noticeType === "Election" ? "🗳" : notice.noticeType === "Policy" ? "📜" : "📢"}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-primary truncate group-hover:text-accent transition-colors">{notice.title}</p>
-                          <p className="text-xs text-gray-400">{timeAgo(notice.publishedAt)}</p>
-                        </div>
+                {loading ? (
+                  <div className="flex justify-center py-8"><div className="w-6 h-6 border-4 border-accent border-t-transparent rounded-full animate-spin" /></div>
+                ) : notices.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">{t("dashboard.noNotices")}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {notices.map((notice) => (
+                      <div key={notice.id} className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <p className="text-sm font-semibold text-primary line-clamp-2">{notice.title}</p>
+                        <p className="text-xs text-gray-400 mt-1">{timeAgo(notice.published_at)}</p>
                       </div>
-                    </Link>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
-
-          {/* EC Panel shortcut */}
-          {can("EC_OFFICER") && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-6">
-              <Link href="/ec" className="group block">
-                <div className="card flex items-center justify-between hover:border-accent/40">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                      <User className="w-5 h-5 text-accent" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-primary text-sm">{t("dashboard.ecPanelTitle")}</p>
-                      <p className="text-xs text-gray-400">{t("dashboard.ecPanelDesc")}</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-accent transition-colors" />
-                </div>
-              </Link>
-            </motion.div>
-          )}
         </div>
       </div>
     </PageLayout>

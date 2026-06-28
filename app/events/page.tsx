@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Users, Filter } from "lucide-react";
@@ -7,9 +7,7 @@ import { PageLayout, PageHeader } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { useLang, useAuthContext } from "@/app/providers";
-import { mockEvents } from "@/lib/mockData";
 import { formatDate, eventTypeIcon, cn } from "@/lib/utils";
-import { Event } from "@/types";
 
 type FilterType = "all" | "workshop" | "seminar" | "carnival" | "sports" | "general";
 
@@ -17,9 +15,28 @@ export default function EventsPage() {
   const { t } = useLang();
   const { user } = useAuthContext();
   const [filter, setFilter] = useState<FilterType>("all");
-  const [rsvpd, setRsvpd] = useState<Set<string>>(new Set(mockEvents.filter((e) => e.userRsvp).map((e) => e.id)));
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [rsvpd, setRsvpd] = useState<Set<string>>(new Set());
 
-  const filtered = filter === "all" ? mockEvents : mockEvents.filter((e) => e.eventType === filter);
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const response = await fetch('/api/events');
+        const data = await response.json();
+        setEvents(data.data || []);
+      } catch (error) {
+        console.error('Failed to fetch events:', error);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchEvents();
+  }, []);
+
+  const filtered = filter === "all" ? events : events.filter((e) => e.event_type === filter);
 
   const filters: { value: FilterType; label: string }[] = [
     { value: "all", label: t("events.filter.all") },
@@ -37,6 +54,19 @@ export default function EventsPage() {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+  }
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <PageHeader title={t("events.title")} subtitle={t("events.subtitle")} />
+        <section className="py-12">
+          <div className="max-w-7xl mx-auto px-4 text-center text-gray-400">
+            Loading events...
+          </div>
+        </section>
+      </PageLayout>
+    );
   }
 
   return (
@@ -99,15 +129,17 @@ function EventCard({
   onRsvp,
   t,
 }: {
-  event: Event;
+  event: any;
   index: number;
   isRsvpd: boolean;
   canRsvp: boolean;
   onRsvp: () => void;
   t: (k: string) => string;
 }) {
-  const pct = Math.round(((event.rsvpCount ?? 0) / event.capacity) * 100);
-  const isFull = (event.rsvpCount ?? 0) >= event.capacity;
+  const capacity = event.capacity || 1;
+  const rsvpCount = event.rsvp_count || 0;
+  const pct = Math.round((rsvpCount / capacity) * 100);
+  const isFull = rsvpCount >= capacity;
 
   return (
     <motion.div
@@ -119,8 +151,8 @@ function EventCard({
       {/* Type banner */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">{eventTypeIcon(event.eventType)}</span>
-          <span className="badge bg-surface text-primary capitalize text-xs">{t(`events.filter.${event.eventType}`)}</span>
+          <span className="text-2xl">{eventTypeIcon(event.event_type)}</span>
+          <span className="badge bg-surface text-primary capitalize text-xs">{event.event_type || 'general'}</span>
         </div>
         <StatusBadge status={event.status} />
       </div>
@@ -134,7 +166,7 @@ function EventCard({
       <div className="space-y-2 mb-4 flex-1">
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Calendar className="w-4 h-4 flex-shrink-0" />
-          {formatDate(event.eventDate, "dd MMM yyyy, hh:mm a")}
+          {formatDate(event.event_date as string, "dd MMM yyyy, hh:mm a")}
         </div>
         {event.venue && (
           <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -144,7 +176,7 @@ function EventCard({
         )}
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Users className="w-4 h-4 flex-shrink-0" />
-          {event.rsvpCount ?? 0} / {event.capacity} {t("events.capacity")}
+          {rsvpCount} / {capacity} {t("events.capacity")}
         </div>
       </div>
 
@@ -156,7 +188,7 @@ function EventCard({
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-xs text-gray-400 mt-1">{pct}{t("events.percentFull")}</p>
+        <p className="text-xs text-gray-400 mt-1">{pct}% Full</p>
       </div>
 
       <div className="flex items-center gap-2">

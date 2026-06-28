@@ -31,11 +31,19 @@ export default function ForgotPasswordPage() {
     if (!validate()) return;
 
     setLoading(true);
-    // Simulate API call — replace with real endpoint
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    setSent(true);
-    toast.success(t("forgotPassword.resetLinkSent"));
+    try {
+      await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      setSent(true);
+      toast.success(t("forgotPassword.resetLinkSent"));
+    } catch {
+      toast.error(t("forgotPassword.failedToSend"));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

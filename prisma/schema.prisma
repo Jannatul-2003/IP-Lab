@@ -1,0 +1,305 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model users {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique @db.VarChar(100)
+  password_hash String @db.VarChar(255)
+  role      String   @default("GUEST")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  members               members?
+  password_reset_tokens password_reset_tokens[]
+  ec_role_holders_assigned ec_role_holders[] @relation("AssignedBy")
+}
+
+model members {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id   String   @unique @db.Uuid
+  student_id String  @unique @db.VarChar(30)
+  full_name String   @db.VarChar(150)
+  batch_year Int
+  phone     String?  @db.VarChar(20)
+  status    String   @default("PENDING")
+  constitution_acknowledged Boolean @default(false)
+  joined_date DateTime? @db.Date
+  deleted_at DateTime? @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  user               users                @relation(fields: [user_id], references: [id])
+  payments           payments[]
+  candidates         candidates[]
+  votes              votes[]
+  event_rsvp         event_rsvp[]
+  meeting_attendance meeting_attendance[]
+  ec_role_holders    ec_role_holders[]
+  volunteer_roles    volunteer_roles[]
+}
+
+model notices {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String   @db.VarChar(200)
+  content     String
+  notice_type String   @db.VarChar(50)
+  author_id   String?  @db.Uuid
+  author_role String?
+  published_at DateTime @default(now()) @db.Timestamptz(6)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model events {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String   @db.VarChar(200)
+  event_type  String   @db.VarChar(50)
+  event_date  DateTime @db.Timestamptz(6)
+  venue       String?  @db.VarChar(200)
+  capacity    Int
+  rsvp_deadline DateTime? @db.Timestamptz(6)
+  description String?
+  status      String   @default("DRAFT")
+  organizer_id String?  @db.Uuid
+  deleted_at  DateTime? @db.Timestamptz(6)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @updatedAt @db.Timestamptz(6)
+
+  media           media[]
+  event_rsvp      event_rsvp[]
+  budgets         budgets[]
+  volunteer_roles volunteer_roles[]
+}
+
+model media {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  url         String   @db.VarChar(500)
+  media_type  String   @db.VarChar(50)
+  tags        String[]
+  event_id    String?  @db.Uuid
+  uploaded_by String?  @db.Uuid
+  uploaded_at DateTime @default(now()) @db.Timestamptz(6)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  event       events? @relation(fields: [event_id], references: [id])
+}
+
+model payments {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transaction_id    String   @unique @db.VarChar(100)
+  member_id         String?  @db.Uuid
+  amount            Float
+  currency          String   @default("BDT") @db.VarChar(3)
+  status            String   @default("initiated")
+  payment_method    String?  @db.VarChar(50)
+  gateway_response  Json?
+  description       String?  @db.VarChar(255)
+  metadata          Json?
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @updatedAt @db.Timestamptz(6)
+  completed_at      DateTime? @db.Timestamptz(6)
+
+  member        members? @relation(fields: [member_id], references: [id])
+  payment_logs  payment_logs[]
+}
+
+model payment_logs {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payment_id      String   @db.Uuid
+  status          String
+  response_code   String?  @db.VarChar(10)
+  response_message String?
+  logged_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  payment         payments @relation(fields: [payment_id], references: [id])
+}
+
+model audit_log {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actor_id    String?  @db.Uuid
+  action      String   @db.VarChar(120)
+  entity_type String   @db.VarChar(80)
+  entity_id   String?  @db.Uuid
+  payload     Json?
+  logged_at   DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model password_reset_tokens {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  token_hash String   @unique @db.VarChar(64)
+  expires_at DateTime @db.Timestamptz(6)
+  used       Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  user users @relation(fields: [user_id], references: [id])
+}
+
+model elections {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  term_id      String       @db.Uuid
+  phase1_start DateTime     @db.Timestamptz(6)
+  phase1_end   DateTime     @db.Timestamptz(6)
+  phase2_start DateTime?    @db.Timestamptz(6)
+  phase2_end   DateTime?    @db.Timestamptz(6)
+  shortlist_n  Int          @default(3)
+  status       String       @default("DRAFT")
+  created_at   DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime     @updatedAt @db.Timestamptz(6)
+
+  term       committee_terms @relation(fields: [term_id], references: [id])
+  candidates candidates[]
+  votes      votes[]
+}
+
+model candidates {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  election_id  String   @db.Uuid
+  member_id    String   @db.Uuid
+  position     String   @db.VarChar(100)
+  phase1_votes Int      @default(0)
+  phase2_votes Int      @default(0)
+  shortlisted  Boolean  @default(false)
+  winner       Boolean  @default(false)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  election elections @relation(fields: [election_id], references: [id])
+  member   members   @relation(fields: [member_id], references: [id])
+  votes    votes[]
+
+  @@unique([election_id, member_id, position])
+}
+
+model votes {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  election_id  String   @db.Uuid
+  voter_id     String?  @db.Uuid
+  candidate_id String   @db.Uuid
+  position     String   @db.VarChar(100)
+  phase        String   @db.VarChar(10)
+  cast_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  election  elections  @relation(fields: [election_id], references: [id])
+  candidate candidates @relation(fields: [candidate_id], references: [id])
+  voter     members?   @relation(fields: [voter_id], references: [id])
+}
+
+model event_rsvp {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_id   String   @db.Uuid
+  member_id  String   @db.Uuid
+  status     String   @default("active")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  event  events  @relation(fields: [event_id], references: [id])
+  member members @relation(fields: [member_id], references: [id])
+
+  @@unique([event_id, member_id])
+}
+
+model budgets {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  term_id          String         @db.Uuid
+  event_id         String?        @db.Uuid
+  total_amount_bdt Float
+  approved_by      String?        @db.Uuid
+  status           String         @default("pending")
+  notes            String?
+  created_at       DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime       @updatedAt @db.Timestamptz(6)
+
+  term         committee_terms @relation(fields: [term_id], references: [id])
+  event        events?        @relation(fields: [event_id], references: [id])
+  expenditures expenditures[]
+}
+
+model expenditures {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  budget_id    String   @db.Uuid
+  amount_bdt   Float
+  category     String?  @db.VarChar(100)
+  description  String?
+  expense_date DateTime @db.Date
+  added_by     String?  @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  budget budgets @relation(fields: [budget_id], references: [id])
+}
+
+model meetings {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title        String   @db.VarChar(200)
+  agenda       String
+  scheduled_at DateTime @db.Timestamptz(6)
+  venue        String   @db.VarChar(200)
+  status       String   @default("upcoming")
+  called_by    String   @db.VarChar(50)
+  minutes_url  String?  @db.VarChar(500)
+  created_by   String?  @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @updatedAt @db.Timestamptz(6)
+
+  attendance meeting_attendance[]
+}
+
+model meeting_attendance {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meeting_id String   @db.Uuid
+  member_id  String   @db.Uuid
+  present    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  meeting meetings @relation(fields: [meeting_id], references: [id])
+  member  members  @relation(fields: [member_id], references: [id])
+
+  @@unique([meeting_id, member_id])
+}
+
+model committee_terms {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  term_number Int      @unique
+  start_date  DateTime @db.Date
+  end_date    DateTime? @db.Date
+  status      String   @default("active")
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  elections       elections[]
+  budgets         budgets[]
+  ec_role_holders ec_role_holders[]
+}
+
+model ec_role_holders {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  term_id       String   @db.Uuid
+  member_id     String   @db.Uuid
+  role_title    String   @db.VarChar(80)
+  assigned_by   String?  @db.Uuid
+  assigned_date DateTime @default(now()) @db.Date
+
+  term     committee_terms @relation(fields: [term_id], references: [id])
+  member   members         @relation(fields: [member_id], references: [id])
+  assigner users?          @relation("AssignedBy", fields: [assigned_by], references: [id])
+
+  @@unique([term_id, role_title])
+}
+
+model volunteer_roles {
+  id                  String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  event_id            String  @db.Uuid
+  role_name           String  @db.VarChar(120)
+  description         String?
+  assigned_member_id  String? @db.Uuid
+  status              String  @default("open")
+
+  event           events   @relation(fields: [event_id], references: [id])
+  assigned_member members? @relation(fields: [assigned_member_id], references: [id])
+}

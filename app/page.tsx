@@ -1,12 +1,11 @@
 "use client";
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { ArrowRight, Calendar, Users, Trophy, BookOpen, Zap, Shield, ChevronDown } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
 import { useLang } from "@/app/providers";
-import { mockStats, mockEvents, mockNotices } from "@/lib/mockData";
 import { formatDate, eventTypeIcon, truncate } from "@/lib/utils";
 
 function FadeInSection({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
@@ -19,7 +18,7 @@ function FadeInSection({ children, delay = 0 }: { children: React.ReactNode; del
   );
 }
 
-function HeroSection() {
+function HeroSection({ memberCount }: { memberCount: number }) {
   const { t } = useLang();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll();
@@ -27,8 +26,8 @@ function HeroSection() {
   const opacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
 
   const stats = [
-    { value: `${mockStats.totalMembers}+`, label: t("hero.stats.members"), icon: "👥" },
-    { value: `${mockStats.totalEvents}+`, label: t("hero.stats.events"), icon: "🎪" },
+    { value: memberCount > 0 ? `${memberCount}+` : "200+", label: t("hero.stats.members"), icon: "👥" },
+    { value: "50+", label: t("hero.stats.events"), icon: "🎪" },
     { value: "33", label: t("hero.stats.years"), icon: "⭐" },
     { value: "12+", label: t("hero.stats.batches"), icon: "🎓" },
   ];
@@ -123,9 +122,8 @@ function FeaturesSection() {
   );
 }
 
-function EventsPreview() {
+function EventsPreview({ events }: { events: any[] }) {
   const { t } = useLang();
-  const events = mockEvents.slice(0, 3);
   const eventTypeLabel = (type: string) => t(`events.filter.${type}`) || type;
 
   return (
@@ -142,34 +140,37 @@ function EventsPreview() {
             </Link>
           </div>
         </FadeInSection>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {events.map((event, i) => (
-            <FadeInSection key={event.id} delay={i * 0.1}>
-              <Link href={`/events/${event.id}`} className="group block h-full">
-                <div className="card h-full group-hover:border-accent/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-2xl">{eventTypeIcon(event.eventType)}</span>
-                    <span className="badge bg-surface text-primary capitalize text-xs">{eventTypeLabel(event.eventType)}</span>
+        {events.length === 0 ? (
+          <p className="text-center text-gray-400 py-12">{t("dashboard.noEvents")}</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {events.map((event, i) => (
+              <FadeInSection key={event.id} delay={i * 0.1}>
+                <Link href={`/events/${event.id}`} className="group block h-full">
+                  <div className="card h-full group-hover:border-accent/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-2xl">{eventTypeIcon(event.event_type)}</span>
+                      <span className="badge bg-surface text-primary capitalize text-xs">{eventTypeLabel(event.event_type)}</span>
+                    </div>
+                    <h3 className="font-heading text-lg font-semibold text-primary mb-2 group-hover:text-accent transition-colors">{event.title}</h3>
+                    <p className="text-sm text-gray-400 mb-4 leading-relaxed">{truncate(event.description ?? "", 90)}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-400 mt-auto pt-3 border-t border-slate-100">
+                      <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDate(event.event_date)}</span>
+                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{event._count?.event_rsvp ?? 0}/{event.capacity}</span>
+                    </div>
                   </div>
-                  <h3 className="font-heading text-lg font-semibold text-primary mb-2 group-hover:text-accent transition-colors">{event.title}</h3>
-                  <p className="text-sm text-gray-400 mb-4 leading-relaxed">{truncate(event.description ?? "", 90)}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-400 mt-auto pt-3 border-t border-slate-100">
-                    <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDate(event.eventDate)}</span>
-                    <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{event.rsvpCount}/{event.capacity}</span>
-                  </div>
-                </div>
-              </Link>
-            </FadeInSection>
-          ))}
-        </div>
+                </Link>
+              </FadeInSection>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
-function NoticesPreview() {
+function NoticesPreview({ notices }: { notices: any[] }) {
   const { t } = useLang();
-  const notices = mockNotices.slice(0, 3);
   const typeColors: Record<string, string> = {
     Election: "bg-purple-100 text-purple-700",
     General: "bg-blue-100 text-blue-700",
@@ -194,28 +195,32 @@ function NoticesPreview() {
             </Link>
           </div>
         </FadeInSection>
-        <div className="space-y-4">
-          {notices.map((notice, i) => (
-            <FadeInSection key={notice.id} delay={i * 0.08}>
-              <Link href="/notices" className="group block">
-                <div className="flex items-start gap-4 p-5 rounded-xl border border-slate-100 hover:border-accent/30 hover:shadow-card bg-white transition-all duration-200">
-                  <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center flex-shrink-0 text-lg">
-                    {typeEmoji[notice.noticeType] ?? "📢"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`badge ${typeColors[notice.noticeType] ?? "bg-gray-100 text-gray-600"}`}>{noticeTypeLabel(notice.noticeType)}</span>
-                      <span className="text-xs text-gray-400">{formatDate(notice.publishedAt)}</span>
+        {notices.length === 0 ? (
+          <p className="text-center text-gray-400 py-12">{t("dashboard.noNotices")}</p>
+        ) : (
+          <div className="space-y-4">
+            {notices.map((notice, i) => (
+              <FadeInSection key={notice.id} delay={i * 0.08}>
+                <Link href="/notices" className="group block">
+                  <div className="flex items-start gap-4 p-5 rounded-xl border border-slate-100 hover:border-accent/30 hover:shadow-card bg-white transition-all duration-200">
+                    <div className="w-10 h-10 rounded-full bg-surface flex items-center justify-center flex-shrink-0 text-lg">
+                      {typeEmoji[notice.notice_type] ?? "📢"}
                     </div>
-                    <h3 className="font-semibold text-primary group-hover:text-accent transition-colors truncate">{notice.title}</h3>
-                    <p className="text-sm text-gray-400 mt-0.5">{truncate(notice.content, 100)}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`badge ${typeColors[notice.notice_type] ?? "bg-gray-100 text-gray-600"}`}>{noticeTypeLabel(notice.notice_type)}</span>
+                        <span className="text-xs text-gray-400">{formatDate(notice.published_at)}</span>
+                      </div>
+                      <h3 className="font-semibold text-primary group-hover:text-accent transition-colors truncate">{notice.title}</h3>
+                      <p className="text-sm text-gray-400 mt-0.5">{truncate(notice.content, 100)}</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-accent transition-colors flex-shrink-0 mt-1" />
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-accent transition-colors flex-shrink-0 mt-1" />
-                </div>
-              </Link>
-            </FadeInSection>
-          ))}
-        </div>
+                </Link>
+              </FadeInSection>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -245,12 +250,28 @@ function CtaSection() {
 }
 
 export default function HomePage() {
+  const [events, setEvents] = useState<any[]>([]);
+  const [notices, setNotices] = useState<any[]>([]);
+  const [memberCount, setMemberCount] = useState(0);
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/events?status=PUBLISHED&limit=3").then((r) => r.json()).catch(() => ({ data: [] })),
+      fetch("/api/notices?limit=3").then((r) => r.json()).catch(() => ({ data: [] })),
+      fetch("/api/members/list?limit=1").then((r) => r.json()).catch(() => ({ pagination: { total: 0 } })),
+    ]).then(([eventsData, noticesData, membersData]) => {
+      setEvents(eventsData.data || []);
+      setNotices(noticesData.data || []);
+      setMemberCount(membersData.pagination?.total || 0);
+    });
+  }, []);
+
   return (
     <PageLayout className="pt-0">
-      <HeroSection />
+      <HeroSection memberCount={memberCount} />
       <FeaturesSection />
-      <EventsPreview />
-      <NoticesPreview />
+      <EventsPreview events={events} />
+      <NoticesPreview notices={notices} />
       <CtaSection />
     </PageLayout>
   );

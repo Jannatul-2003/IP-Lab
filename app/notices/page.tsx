@@ -1,13 +1,12 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { PageLayout, PageHeader } from "@/components/layout/PageLayout";
 import { useLang } from "@/app/providers";
-import { mockNotices } from "@/lib/mockData";
 import { formatDate, timeAgo, cn } from "@/lib/utils";
 import { NoticeType } from "@/types";
 
-const typeColors: Record<NoticeType, string> = {
+const typeColors: Record<string, string> = {
   Election: "bg-purple-100 text-purple-700 border-purple-200",
   General: "bg-blue-100 text-blue-700 border-blue-200",
   Policy: "bg-orange-100 text-orange-700 border-orange-200",
@@ -15,7 +14,7 @@ const typeColors: Record<NoticeType, string> = {
   Event: "bg-teal-100 text-teal-700 border-teal-200",
 };
 
-const typeEmoji: Record<NoticeType, string> = {
+const typeEmoji: Record<string, string> = {
   Election: "🗳",
   Policy: "📜",
   Event: "🎪",
@@ -23,17 +22,51 @@ const typeEmoji: Record<NoticeType, string> = {
   General: "📢",
 };
 
-const NOTICE_TYPE_KEYS: ("all" | NoticeType)[] = ["all", "General", "Election", "Policy", "Membership", "Event"];
+const NOTICE_TYPE_KEYS: string[] = ["all", "General", "Election", "Policy", "Membership", "Event"];
 
 export default function NoticesPage() {
   const { t } = useLang();
-  const [filter, setFilter] = useState<"all" | NoticeType>("all");
+  const [filter, setFilter] = useState<string>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [notices, setNotices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = filter === "all" ? mockNotices : mockNotices.filter((n) => n.noticeType === filter);
+  useEffect(() => {
+    async function fetchNotices() {
+      try {
+        const url = new URL('/api/notices', window.location.origin);
+        if (filter !== "all") {
+          url.searchParams.set('type', filter);
+        }
+        const response = await fetch(url.toString());
+        const data = await response.json();
+        setNotices(data.data || []);
+      } catch (error) {
+        console.error('Failed to fetch notices:', error);
+        setNotices([]);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  const typeLabel = (type: "all" | NoticeType) =>
+    fetchNotices();
+  }, [filter]);
+
+  const typeLabel = (type: string) =>
     type === "all" ? t("notices.filterAll") : t(`notices.types.${type}`);
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <PageHeader title={t("notices.title")} subtitle={t("notices.subtitle")} />
+        <section className="py-12">
+          <div className="max-w-4xl mx-auto px-4 text-center text-gray-400">
+            Loading notices...
+          </div>
+        </section>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
@@ -59,17 +92,18 @@ export default function NoticesPage() {
             ))}
           </div>
 
-          {filtered.length === 0 ? (
+          {notices.length === 0 ? (
             <div className="text-center py-20 text-gray-400">
               <div className="text-5xl mb-4">📋</div>
               <p>{t("notices.noNotices")}</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {filtered.map((notice, i) => {
+              {notices.map((notice, i) => {
                 const isOpen = expanded === notice.id;
-                const colorClass = typeColors[notice.noticeType] ?? "bg-gray-100 text-gray-600 border-gray-200";
-                const emoji = typeEmoji[notice.noticeType] ?? "📢";
+                const noticeType = notice.notice_type || "General";
+                const colorClass = typeColors[noticeType] ?? "bg-gray-100 text-gray-600 border-gray-200";
+                const emoji = typeEmoji[noticeType] ?? "📢";
 
                 return (
                   <motion.div
@@ -88,21 +122,21 @@ export default function NoticesPage() {
                         {/* Timeline dot */}
                         <div className="flex flex-col items-center flex-shrink-0 mt-1">
                           <div className="w-9 h-9 rounded-full bg-surface flex items-center justify-center text-lg">{emoji}</div>
-                          {i < filtered.length - 1 && <div className="w-0.5 h-6 bg-slate-100 mt-2" />}
+                          {i < notices.length - 1 && <div className="w-0.5 h-6 bg-slate-100 mt-2" />}
                         </div>
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className={cn("badge border", colorClass)}>
-                              {t(`notices.types.${notice.noticeType}`)}
+                              {noticeType}
                             </span>
-                            <span className="text-xs text-gray-400">{timeAgo(notice.publishedAt)}</span>
-                            {notice.authorRole && (
-                              <span className="text-xs text-gray-400">· {t("notices.by")} {notice.authorRole}</span>
+                            <span className="text-xs text-gray-400">{timeAgo(notice.published_at)}</span>
+                            {notice.author_role && (
+                              <span className="text-xs text-gray-400">· {t("notices.by")} {notice.author_role}</span>
                             )}
                           </div>
                           <h3 className="font-heading font-semibold text-primary text-lg leading-snug">{notice.title}</h3>
-                          <p className="text-xs text-gray-400 mt-1">{formatDate(notice.publishedAt, "dd MMMM yyyy")}</p>
+                          <p className="text-xs text-gray-400 mt-1">{formatDate(notice.published_at as string, "dd MMMM yyyy")}</p>
                         </div>
 
                         <span className={cn("text-gray-300 transition-transform duration-200 flex-shrink-0 mt-1", isOpen && "rotate-180")}>

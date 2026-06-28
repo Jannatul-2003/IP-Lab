@@ -9,15 +9,6 @@ import { FormField, Input } from "@/components/ui/FormField";
 import { useToast } from "@/components/ui/Toaster";
 import { useAuthContext, useLang } from "@/app/providers";
 import { setStoredUser } from "@/lib/auth";
-import { User } from "@/types";
-
-const MOCK_USERS: Record<string, { user: User; password: string }> = {
-  "member@du.ac.bd": { password: "member123", user: { id: "u1", email: "member@du.ac.bd", role: "MEMBER" } },
-  "ec@du.ac.bd": { password: "ec123", user: { id: "u2", email: "ec@du.ac.bd", role: "EC_OFFICER" } },
-  "president@du.ac.bd": { password: "pres123", user: { id: "u3", email: "president@du.ac.bd", role: "PRESIDENT", ecRole: "President" } },
-  "advisor@du.ac.bd": { password: "adv123", user: { id: "u4", email: "advisor@du.ac.bd", role: "FACULTY_ADVISOR" } },
-  "admin@du.ac.bd": { password: "admin123", user: { id: "u5", email: "admin@du.ac.bd", role: "SYSTEM_ADMIN" } },
-};
 
 export default function LoginPage() {
   const { t } = useLang();
@@ -46,24 +37,37 @@ export default function LoginPage() {
     setErrors({});
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 800));
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const found = MOCK_USERS[email.toLowerCase()];
-    if (!found || found.password !== password) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        setLoading(false);
+        setErrors({ password: data.error || 'Invalid credentials' });
+        return;
+      }
+
+      // Store user data
+      setStoredUser(data.user, 'auth_token');
+      setUser(data.user);
+      toast.success('Login successful!');
       setLoading(false);
-      setErrors({ password: "Invalid email or password." });
-      return;
+
+      // Redirect based on role
+      if (data.user.role === 'FACULTY_ADVISOR') router.push('/advisor');
+      else if (data.user.role === 'SYSTEM_ADMIN') router.push('/admin');
+      else if (['EC_OFFICER', 'PRESIDENT', 'SECRETARY'].includes(data.user.role)) router.push('/ec');
+      else router.push('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoading(false);
+      setErrors({ password: 'Failed to login. Please try again.' });
     }
-
-    setStoredUser(found.user, "mock-jwt-token");
-    setUser(found.user);
-    toast.success("Welcome back!");
-    setLoading(false);
-
-    if (found.user.role === "FACULTY_ADVISOR") router.push("/advisor");
-    else if (found.user.role === "SYSTEM_ADMIN") router.push("/admin");
-    else if (["EC_OFFICER", "PRESIDENT", "SECRETARY"].includes(found.user.role)) router.push("/ec");
-    else router.push("/dashboard");
   }
 
   return (
@@ -82,14 +86,7 @@ export default function LoginPage() {
             <p className="text-gray-400 text-sm mt-1">{t("auth.loginSubtitle")}</p>
           </div>
 
-          {/* Demo hint */}
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-6 text-xs text-blue-600 space-y-0.5">
-            <p className="font-semibold mb-1">Demo accounts:</p>
-            <p>member@du.ac.bd / member123</p>
-            <p>ec@du.ac.bd / ec123</p>
-            <p>president@du.ac.bd / pres123</p>
-            <p>admin@du.ac.bd / admin123</p>
-          </div>
+          {/* Demo hint removed - using real authentication */}
 
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <FormField label={t("auth.email")} error={errors.email} required>

@@ -57,10 +57,37 @@ export default function RegisterPage() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setDone(true);
-    toast.success("Application submitted! You'll receive an email once approved.");
+    
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          fullName: form.fullName,
+          studentId: form.studentId,
+          batchYear: form.batchYear,
+          phone: form.phone,
+          constitutionAcknowledged: form.constitutionAck,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || 'Registration failed');
+        setLoading(false);
+        return;
+      }
+
+      setDone(true);
+      toast.success("Registration successful! Your account is pending approval.");
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('Failed to register. Please try again.');
+      setLoading(false);
+    }
   }
 
   if (done) {

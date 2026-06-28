@@ -10,7 +10,6 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { RoleBadge } from "@/components/shared/RoleBadge";
 import { useToast } from "@/components/ui/Toaster";
 import { useAuthContext, useLang } from "@/app/providers";
-import { mockMembers } from "@/lib/mockData";
 import { formatDate, getInitials } from "@/lib/utils";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,10 +33,10 @@ export default function ProfilePage() {
   const router = useRouter();
   const toast = useToast();
 
-  const member = mockMembers.find((m) => m.userId === user?.id) ?? mockMembers[0];
-
+  const [member, setMember] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState(user?.email ?? "");
-  const [phone, setPhone] = useState(member.phone ?? "");
+  const [phone, setPhone] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [infoSaving, setInfoSaving] = useState(false);
@@ -47,7 +46,30 @@ export default function ProfilePage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
 
-  if (!user) { router.push("/login"); return null; }
+  // Fetch member profile on mount
+  React.useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const response = await fetch('/api/members/profile');
+        const data = await response.json();
+        setMember(data);
+        setPhone(data.phone || "");
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+        toast.error('Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (user) {
+      fetchProfile();
+    } else {
+      router.push("/login");
+    }
+  }, [user, router, toast]);
+
+  if (!user || loading) return null;
 
   function validateInfo(): boolean {
     let ok = true;
@@ -62,9 +84,33 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!validateInfo()) return;
     setInfoSaving(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setInfoSaving(false);
-    toast.success(t("profile.saveChanges") + ".");
+    
+    try {
+      const response = await fetch('/api/members/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: member.full_name,
+          phone: phone,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to save changes');
+        setInfoSaving(false);
+        return;
+      }
+
+      const data = await response.json();
+      setMember(data.member);
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      console.error('Save error:', error);
+      toast.error('Failed to save changes');
+    } finally {
+      setInfoSaving(false);
+    }
   }
 
   function validatePw(): boolean {
@@ -81,18 +127,42 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!validatePw()) return;
     setPwSaving(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setPwSaving(false);
-    setPw({ current: "", next: "", confirm: "" });
-    setPwErrors({});
-    toast.success(t("profile.updatePassword") + ".");
+    
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: pw.current,
+          newPassword: pw.next,
+          confirmPassword: pw.confirm,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to change password');
+        setPwSaving(false);
+        return;
+      }
+
+      setPw({ current: "", next: "", confirm: "" });
+      setPwErrors({});
+      toast.success('Password updated successfully');
+    } catch (error) {
+      console.error('Change password error:', error);
+      toast.error('Failed to change password');
+    } finally {
+      setPwSaving(false);
+    }
   }
 
   const immutableFields = [
-    { label: t("profile.studentId"),   value: member.studentId },
-    { label: t("profile.batchYear"),   value: String(member.batchYear) },
-    { label: t("profile.memberSince"), value: member.joinedDate ? formatDate(member.joinedDate) : t("profile.pending") },
-    { label: t("profile.status"),      value: member.status },
+    { label: t("profile.studentId"),   value: member?.student_id || "N/A" },
+    { label: t("profile.batchYear"),   value: String(member?.batch_year || "N/A") },
+    { label: t("profile.memberSince"), value: member?.joined_date ? formatDate(member.joined_date as string) : t("profile.pending") },
+    { label: t("profile.status"),      value: member?.status || "PENDING" },
   ];
 
   const pwFields: { field: keyof PwForm; label: string; placeholder: string }[] = [
@@ -111,14 +181,14 @@ export default function ProfilePage() {
             <div className="card dark:bg-gray-800 dark:border-gray-700">
               <div className="flex items-start gap-5">
                 <div className="w-20 h-20 rounded-2xl bg-accent flex items-center justify-center text-white text-2xl font-bold font-heading flex-shrink-0">
-                  {getInitials(member.fullName)}
+                  {getInitials(member?.full_name || user.email)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="font-heading text-2xl font-bold text-primary dark:text-white">{member.fullName}</h1>
+                  <h1 className="font-heading text-2xl font-bold text-primary dark:text-white">{member?.full_name || "Loading..."}</h1>
                   <p className="text-gray-400 text-sm mt-1">{user.email}</p>
                   <div className="flex items-center gap-2 mt-3">
                     <RoleBadge role={user.role} />
-                    <StatusBadge status={member.status} />
+                    <StatusBadge status={member?.status || "PENDING"} />
                   </div>
                 </div>
               </div>

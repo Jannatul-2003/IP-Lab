@@ -1,54 +1,54 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Vote, Check, ArrowLeft, Lock, ChevronLeft } from "lucide-react";
+import { Vote, Check, ChevronLeft } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useToast } from "@/components/ui/Toaster";
 import { useAuthContext, useLang } from "@/app/providers";
-import { mockElection } from "@/lib/mockData";
 import { getInitials, cn } from "@/lib/utils";
 
-const MOCK_CANDIDATES: Record<string, { id: string; name: string; studentId: string; phase1Votes: number }[]> = {
-  "President": [
-    { id: "c1", name: "Ahmed Hossain", studentId: "20-44001", phase1Votes: 47 },
-    { id: "c2", name: "Nusrat Jahan", studentId: "20-44023", phase1Votes: 38 },
-    { id: "c3", name: "Rafiqul Islam", studentId: "20-44056", phase1Votes: 29 },
-  ],
-  "General Secretary": [
-    { id: "c4", name: "Tasneem Akter", studentId: "21-46001", phase1Votes: 52 },
-    { id: "c5", name: "Shahriar Ahmed", studentId: "21-46022", phase1Votes: 41 },
-    { id: "c6", name: "Mitu Rahman", studentId: "21-46045", phase1Votes: 33 },
-  ],
-  "Treasurer": [
-    { id: "c7", name: "Mahfuz Alam", studentId: "21-46080", phase1Votes: 44 },
-    { id: "c8", name: "Sumaiya Islam", studentId: "21-46091", phase1Votes: 37 },
-    { id: "c9", name: "Raihan Kabir", studentId: "21-46110", phase1Votes: 26 },
-  ],
-};
-
-const POSITIONS = Object.keys(MOCK_CANDIDATES);
-
 export default function VotingPage() {
-  useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthContext();
   const { t } = useLang();
   const toast = useToast();
 
+  const [candidates, setCandidates] = useState<Record<string, any[]>>({});
+  const [positions, setPositions] = useState<string[]>([]);
   const [votes, setVotes] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [currentPos, setCurrentPos] = useState(0);
 
-  if (!user) { router.push("/login"); return null; }
+  useEffect(() => {
+    if (!user) { router.push("/login"); return; }
+    fetch(`/api/elections/${id}/candidates`)
+      .then((r) => r.json())
+      .then((data) => {
+        const list: any[] = data.data || [];
+        const byPosition: Record<string, any[]> = {};
+        for (const c of list) {
+          if (!byPosition[c.position]) byPosition[c.position] = [];
+          byPosition[c.position].push(c);
+        }
+        setCandidates(byPosition);
+        setPositions(Object.keys(byPosition));
+      })
+      .catch(console.error)
+      .finally(() => setFetchLoading(false));
+  }, [id, user, router]);
 
-  const position = POSITIONS[currentPos];
-  const candidates = MOCK_CANDIDATES[position];
-  const allVoted = POSITIONS.every((p) => votes[p]);
+  if (!user) return null;
+
+  const position = positions[currentPos];
+  const positionCandidates = candidates[position] || [];
+  const allVoted = positions.length > 0 && positions.every((p) => votes[p]);
 
   function selectCandidate(candidateId: string) {
     setVotes((prev) => ({ ...prev, [position]: candidateId }));
@@ -56,28 +56,58 @@ export default function VotingPage() {
 
   async function submitVotes() {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setConfirmOpen(false);
-    setSubmitted(true);
-    toast.success("Your votes have been recorded. Voter identity anonymized.");
+    try {
+      const votePayload = positions.map((p) => ({ candidateId: votes[p], position: p }));
+      const res = await fetch(`/api/elections/${id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ votes: votePayload }),
+      });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || "Failed to submit votes"); return; }
+      setSubmitted(true);
+      toast.success("Your votes have been recorded!");
+    } catch {
+      toast.error("Failed to submit votes. Please try again.");
+    } finally {
+      setLoading(false);
+      setConfirmOpen(false);
+    }
+  }
+
+  if (fetchLoading) {
+    return (
+      <PageLayout>
+        <div className="flex justify-center py-20">
+          <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+        </div>
+      </PageLayout>
+    );
   }
 
   if (submitted) {
     return (
       <PageLayout>
-        <div className="min-h-screen flex items-center justify-center pt-20 bg-slate-50">
-          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card max-w-md w-full mx-4 text-center">
-            <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+        <section className="py-20">
+          <div className="max-w-lg mx-auto px-4 text-center">
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Check className="w-10 h-10 text-green-500" />
-            </div>
-            <h2 className="font-heading text-2xl font-bold text-primary mb-3">Votes Cast!</h2>
-            <p className="text-gray-400 text-sm mb-2">Your votes have been recorded anonymously.</p>
-            <div className="flex items-center justify-center gap-1 text-xs text-gray-300 mb-6">
-              <Lock className="w-3 h-3" /> Voter identity anonymized per constitutional mandate
-            </div>
-            <Button onClick={() => router.push("/elections")} className="w-full">Back to Elections</Button>
-          </motion.div>
+            </motion.div>
+            <h1 className="font-heading text-3xl font-bold text-primary mb-3">{t("elections.voteSubmitted")}</h1>
+            <p className="text-gray-500 mb-8">{t("elections.voteThankYou")}</p>
+            <Button onClick={() => router.push("/elections")}>{t("elections.backToElections")}</Button>
+          </div>
+        </section>
+      </PageLayout>
+    );
+  }
+
+  if (positions.length === 0) {
+    return (
+      <PageLayout>
+        <div className="max-w-lg mx-auto px-4 py-20 text-center text-gray-400">
+          No candidates registered yet.
+          <div className="mt-6"><Button onClick={() => router.push("/elections")}>Back to Elections</Button></div>
         </div>
       </PageLayout>
     );
@@ -85,157 +115,89 @@ export default function VotingPage() {
 
   return (
     <PageLayout>
-      <div className="pt-20 pb-16 min-h-screen bg-slate-50">
+      <section className="py-12">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-400 hover:text-primary transition-colors mb-6 text-sm">
-            <ArrowLeft className="w-4 h-4" /> Back
+          <button onClick={() => router.push("/elections")} className="flex items-center gap-1 text-sm text-gray-400 hover:text-primary mb-6">
+            <ChevronLeft className="w-4 h-4" /> {t("elections.backToElections")}
           </button>
 
-          {/* Header */}
-          <div className="card mb-6">
-            <div className="flex items-center gap-3 mb-5">
-              <Vote className="w-6 h-6 text-purple-500 flex-shrink-0" />
-              <div>
-                <h1 className="font-heading text-xl font-bold text-primary dark:text-white">
-                  {mockElection.status === "PHASE1_OPEN" ? t("elections.phase1") : t("elections.phase2")}
-                </h1>
-                <p className="text-xs text-gray-400">EC Election 2026 — Term 8</p>
-              </div>
-            </div>
-
-            {/* ── Labeled step indicator ── */}
-            <nav aria-label="Voting steps">
-              <ol className="flex items-start">
-                {POSITIONS.map((p, i) => {
-                  const done = votes[p] && i !== currentPos;
-                  const active = i === currentPos;
-                  const isLast = i === POSITIONS.length - 1;
-                  return (
-                    <React.Fragment key={p}>
-                      <li className="flex flex-col items-center gap-1.5 flex-shrink-0">
-                        <button
-                          onClick={() => votes[p] || i <= currentPos ? setCurrentPos(i) : undefined}
-                          aria-current={active ? "step" : undefined}
-                          aria-label={`Step ${i + 1}: ${p}`}
-                          className={cn(
-                            "w-9 h-9 rounded-full border-2 flex items-center justify-center text-sm font-bold transition-all",
-                            done
-                              ? "bg-green-500 border-green-500 text-white cursor-pointer hover:bg-green-600"
-                              : active
-                              ? "bg-accent border-accent text-white"
-                              : "bg-slate-100 border-slate-200 text-gray-400 cursor-default"
-                          )}
-                        >
-                          {done ? <Check className="w-4 h-4" /> : i + 1}
-                        </button>
-                        <span className={cn(
-                          "text-[10px] font-medium text-center leading-tight max-w-[64px]",
-                          active ? "text-accent" : done ? "text-green-600" : "text-gray-400"
-                        )}>
-                          {p}
-                        </span>
-                      </li>
-                      {!isLast && (
-                        <div className={cn(
-                          "flex-1 h-0.5 mt-[18px] mx-1 transition-colors",
-                          votes[p] ? "bg-green-400" : "bg-slate-200"
-                        )} />
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </ol>
-            </nav>
+          <div className="flex items-center gap-3 mb-8">
+            <Vote className="w-7 h-7 text-accent" />
+            <h1 className="font-heading text-2xl font-bold text-primary">{t("elections.castYourVote")}</h1>
           </div>
 
-          {/* Candidates */}
-          <motion.div key={position} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-3 mb-6">
-            {candidates.map((c) => {
-              const isSelected = votes[position] === c.id;
-              return (
+          {/* Position tabs */}
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+            {positions.map((pos, i) => (
+              <button
+                key={pos}
+                onClick={() => setCurrentPos(i)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1",
+                  currentPos === i ? "bg-accent text-white" : "bg-slate-100 text-gray-500 hover:bg-slate-200"
+                )}
+              >
+                {votes[pos] && <Check className="w-3 h-3" />}
+                {pos}
+              </button>
+            ))}
+          </div>
+
+          <motion.div key={position} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="card mb-6">
+            <h2 className="font-heading text-lg font-semibold text-primary mb-4">{position}</h2>
+            <div className="space-y-3">
+              {positionCandidates.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => selectCandidate(c.id)}
                   className={cn(
-                    "w-full text-left p-4 rounded-xl border-2 transition-all duration-200",
-                    isSelected
-                      ? "border-accent bg-accent/5 shadow-glow-sm"
-                      : "border-slate-100 bg-white hover:border-accent/40"
+                    "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
+                    votes[position] === c.id
+                      ? "border-accent bg-accent/5"
+                      : "border-slate-100 hover:border-accent/40 hover:bg-slate-50"
                   )}
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0",
-                      isSelected ? "bg-accent text-white" : "bg-surface text-primary"
-                    )}>
-                      {getInitials(c.name)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-primary">{c.name}</p>
-                      <p className="text-xs text-gray-400">{c.studentId}</p>
-                    </div>
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all",
-                      isSelected ? "border-accent bg-accent" : "border-slate-300"
-                    )}>
-                      {isSelected && <Check className="w-3 h-3 text-white" />}
-                    </div>
+                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-sm flex-shrink-0">
+                    {getInitials(c.member?.full_name || "?")}
                   </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-primary">{c.member?.full_name}</p>
+                    <p className="text-xs text-gray-400">{c.member?.student_id}</p>
+                  </div>
+                  {votes[position] === c.id && (
+                    <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  )}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </motion.div>
 
-          {/* ── Navigation: Back + Next/Submit ── */}
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPos((p) => Math.max(0, p - 1))}
-              disabled={currentPos === 0}
-              className="flex-1"
-              leftIcon={<ChevronLeft className="w-4 h-4" />}
-            >
-              {t("common.back")}
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" onClick={() => setCurrentPos((p) => Math.max(0, p - 1))} disabled={currentPos === 0}>
+              Previous
             </Button>
-            {currentPos < POSITIONS.length - 1 ? (
-              <Button
-                onClick={() => setCurrentPos((p) => p + 1)}
-                disabled={!votes[position]}
-                className="flex-1"
-              >
-                {t("common.next")}
+            {currentPos < positions.length - 1 ? (
+              <Button onClick={() => setCurrentPos((p) => p + 1)} disabled={!votes[position]}>
+                Next Position
               </Button>
             ) : (
-              <Button
-                onClick={() => setConfirmOpen(true)}
-                disabled={!allVoted}
-                className="flex-1"
-              >
-                Submit All Votes
+              <Button onClick={() => setConfirmOpen(true)} disabled={!allVoted}>
+                {t("elections.submitVotes")}
               </Button>
             )}
           </div>
-
-          {!votes[position] && (
-            <p className="text-center text-xs text-gray-400 mt-3">
-              Select a candidate to continue.
-            </p>
-          )}
-          {votes[position] && !allVoted && (
-            <p className="text-center text-xs text-gray-400 mt-3">
-              {POSITIONS.length - Object.keys(votes).length} position(s) remaining.
-            </p>
-          )}
         </div>
-      </div>
+      </section>
 
       <ConfirmDialog
         isOpen={confirmOpen}
         onConfirm={submitVotes}
         onCancel={() => setConfirmOpen(false)}
-        title="Submit Your Votes?"
-        message="Once submitted, your votes cannot be changed. Your voter identity will be anonymized per constitutional requirements."
-        confirmLabel="Yes, Submit"
+        title={t("elections.confirmVote")}
+        message={t("elections.confirmVoteMessage")}
+        confirmLabel={t("elections.submitVotes")}
         variant="info"
         isLoading={loading}
       />

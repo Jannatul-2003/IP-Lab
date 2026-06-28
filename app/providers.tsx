@@ -128,9 +128,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   function setUser(u: User | null) { setUserState(u); }
 
   function logout() {
-    clearAuth();
-    setUserState(null);
-    window.location.href = "/";
+    fetch("/api/auth/logout", { method: "POST" }).finally(() => {
+      clearAuth();
+      setUserState(null);
+      window.location.href = "/";
+    });
   }
 
   function can(role: UserRole): boolean {

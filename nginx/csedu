@@ -1,0 +1,166 @@
+# CSEDU Students' Club Portal - Nginx Configuration
+# This file should be placed at: /etc/nginx/sites-available/csedu
+# Then symlink: sudo ln -s /etc/nginx/sites-available/csedu /etc/nginx/sites-enabled/
+
+upstream api_backend {
+    # Backend API server running on Docker
+    server 127.0.0.1:8000;
+    
+    # Add more servers for load balancing if needed
+    # server 127.0.0.1:8001;
+    # server 127.0.0.1:8002;
+    
+    keepalive 32;
+}
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    listen [::]:80;
+    server_name csedu.du.ac.bd www.csedu.du.ac.bd;
+
+    # Allow certbot challenges for Let's Encrypt
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Redirect all other traffic to HTTPS
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+}
+
+# Main HTTPS server
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name csedu.du.ac.bd www.csedu.du.ac.bd;
+
+    # SSL/TLS Configuration
+    # Generate with: sudo certbot certonly --nginx -d csedu.du.ac.bd -d www.csedu.du.ac.bd
+    ssl_certificate /etc/letsencrypt/live/csedu.du.ac.bd/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/csedu.du.ac.bd/privkey.pem;
+
+    # SSL Configuration (Mozilla Modern)
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_session_tickets off;
+
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net; font-src fonts.gstatic.com;" always;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
+
+    # Client body size limit (for file uploads)
+    client_max_body_size 50M;
+
+    # Logging
+    access_log /var/log/nginx/csedu_access.log combined;
+    error_log /var/log/nginx/csedu_error.log warn;
+
+    # Root directory for static files
+    root /var/www/csedu;
+
+    # Index file
+    index index.html index.htm;
+
+    # Static assets caching
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # API Routes
+    location /api/ {
+        proxy_pass http://api_backend;
+        proxy_http_version 1.1;
+        
+        # Headers
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # Buffering
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+        proxy_busy_buffers_size 8k;
+    }
+
+    # Health check endpoint
+    location /health {
+        proxy_pass http://api_backend;
+        access_log off;
+    }
+
+    # Webhook endpoints (no authentication)
+    location ~ ^/api/v1/payments/ipn$ {
+        proxy_pass http://api_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Frontend SPA routing
+    location / {
+        # Try to serve static files first
+        try_files $uri $uri/ /index.html;
+        
+        # Cache control for HTML files
+        add_header Cache-Control "public, max-age=3600";
+    }
+
+    # 404 error handling
+    error_page 404 /404.html;
+    location = /404.html {
+        internal;
+    }
+
+    # 500 error handling
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        internal;
+    }
+
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+}
+
+# Rate limiting configuration (optional)
+# Add to http block in /etc/nginx/nginx.conf:
+# limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+# limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=5r/m;
+#
+# Then use in server block:
+# location /api/auth/ {
+#     limit_req zone=auth_limit burst=10 nodelay;
+#     proxy_pass http://api_backend;
+# }

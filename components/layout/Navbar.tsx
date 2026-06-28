@@ -57,7 +57,7 @@ export function Navbar() {
 
   return (
     <nav
-      className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300 overflow-x-hidden", bgClass)}
+      className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300", bgClass)}
       role="navigation"
       aria-label="Main navigation"
     >

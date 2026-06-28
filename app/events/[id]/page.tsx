@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Users, ArrowLeft, Check } from "lucide-react";
@@ -9,7 +9,6 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useToast } from "@/components/ui/Toaster";
 import { useLang, useAuthContext } from "@/app/providers";
-import { mockEvents } from "@/lib/mockData";
 import { formatDate, eventTypeIcon, cn } from "@/lib/utils";
 
 export default function EventDetailPage() {
@@ -19,129 +18,149 @@ export default function EventDetailPage() {
   const { user } = useAuthContext();
   const toast = useToast();
 
-  const event = mockEvents.find((e) => e.id === id) ?? mockEvents[0];
-  const [isRsvpd, setIsRsvpd] = useState(event.userRsvp ?? false);
+  const [event, setEvent] = useState<any>(null);
+  const [isRsvpd, setIsRsvpd] = useState(false);
+  const [rsvpCount, setRsvpCount] = useState(0);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
 
-  const pct = Math.round(((event.rsvpCount ?? 0) / event.capacity) * 100);
-  const isFull = (event.rsvpCount ?? 0) >= event.capacity;
+  useEffect(() => {
+    fetch(`/api/events/${id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) { router.push("/events"); return; }
+        setEvent(data);
+        setRsvpCount(data.rsvpCount || data._count?.event_rsvp || 0);
+      })
+      .catch(() => router.push("/events"))
+      .finally(() => setFetchLoading(false));
+  }, [id, router]);
+
+  if (fetchLoading || !event) {
+    return (
+      <PageLayout>
+        <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" /></div>
+      </PageLayout>
+    );
+  }
+
+  const pct = Math.round((rsvpCount / event.capacity) * 100);
+  const isFull = rsvpCount >= event.capacity;
 
   async function handleRsvp() {
     if (!user) { router.push("/login"); return; }
     if (isRsvpd) { setConfirmOpen(true); return; }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setIsRsvpd(true);
-    setLoading(false);
-    toast.success(t("events.rsvpd") + "!");
+    try {
+      const res = await fetch(`/api/events/${id}/rsvp`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || "Failed to RSVP"); return; }
+      setIsRsvpd(true);
+      setRsvpCount((c) => c + 1);
+      toast.success(t("events.rsvpd") + "!");
+    } catch {
+      toast.error("Failed to RSVP");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleCancelRsvp() {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setIsRsvpd(false);
-    setLoading(false);
-    setConfirmOpen(false);
-    toast.success(t("events.cancelRsvp") + ".");
+    try {
+      const res = await fetch(`/api/events/${id}/rsvp`, { method: "DELETE" });
+      if (!res.ok) { toast.error("Failed to cancel RSVP"); return; }
+      setIsRsvpd(false);
+      setRsvpCount((c) => Math.max(0, c - 1));
+      toast.success(t("events.cancelRsvp") + ".");
+    } catch {
+      toast.error("Failed to cancel RSVP");
+    } finally {
+      setLoading(false);
+      setConfirmOpen(false);
+    }
   }
 
   return (
     <PageLayout>
-      <div className="pt-20 pb-16 bg-slate-50 min-h-screen">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-400 hover:text-primary transition-colors mb-6 text-sm">
+      <section className="pt-24 pb-16">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <button onClick={() => router.push("/events")} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-primary mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4" /> {t("events.backToEvents")}
           </button>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-3xl">{eventTypeIcon(event.eventType)}</span>
-                  <span className="badge bg-surface text-primary capitalize">{t(`events.filter.${event.eventType}`)}</span>
-                  <StatusBadge status={event.status} />
-                </div>
-                <h1 className="font-heading text-3xl font-bold text-primary leading-tight">{event.title}</h1>
-              </div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            {/* Event type icon + status */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">{eventTypeIcon(event.event_type)}</span>
+              <StatusBadge status={event.status} />
             </div>
 
+            <h1 className="font-heading text-3xl sm:text-4xl font-bold text-primary mb-6">{event.title}</h1>
+
             {/* Meta */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-xl mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-accent" />
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              <div className="card flex items-center gap-3 text-sm">
+                <Calendar className="w-5 h-5 text-accent flex-shrink-0" />
                 <div>
-                  <p className="text-xs text-gray-400">{t("events.dateTime")}</p>
-                  <p className="font-medium text-primary text-sm">{formatDate(event.eventDate, "dd MMM yyyy")}</p>
-                  <p className="text-xs text-gray-500">{formatDate(event.eventDate, "hh:mm a")}</p>
+                  <p className="text-xs text-gray-400">{t("events.date")}</p>
+                  <p className="font-semibold text-primary">{formatDate(event.event_date)}</p>
                 </div>
               </div>
-              {event.venue && (
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-green-500" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">{t("events.venue")}</p>
-                    <p className="font-medium text-primary text-sm">{event.venue}</p>
-                  </div>
+              <div className="card flex items-center gap-3 text-sm">
+                <MapPin className="w-5 h-5 text-accent flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400">{t("events.venue")}</p>
+                  <p className="font-semibold text-primary">{event.venue || t("events.tbd")}</p>
                 </div>
-              )}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
-                  <Users className="w-5 h-5 text-purple-500" />
-                </div>
+              </div>
+              <div className="card flex items-center gap-3 text-sm">
+                <Users className="w-5 h-5 text-accent flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-400">{t("events.capacity")}</p>
-                  <p className="font-medium text-primary text-sm">{event.rsvpCount} / {event.capacity}</p>
-                  <div className="h-1 w-20 bg-slate-200 rounded-full mt-1 overflow-hidden">
-                    <div className={cn("h-full rounded-full", pct >= 90 ? "bg-red-400" : "bg-green-400")} style={{ width: `${pct}%` }} />
-                  </div>
+                  <p className="font-semibold text-primary">{rsvpCount} / {event.capacity}</p>
                 </div>
               </div>
             </div>
 
             {/* Description */}
             {event.description && (
-              <div className="mb-6">
+              <div className="card mb-6">
                 <h2 className="font-heading text-lg font-semibold text-primary mb-3">{t("events.about")}</h2>
-                <p className="text-gray-500 leading-relaxed">{event.description}</p>
+                <p className="text-gray-500 text-sm leading-relaxed">{event.description}</p>
               </div>
             )}
 
-            {/* RSVP deadline */}
-            {event.rsvpDeadline && (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl mb-6 text-sm text-yellow-700">
-                <strong>{t("events.rsvpDeadline")}:</strong> {formatDate(event.rsvpDeadline, "dd MMM yyyy, hh:mm a")}
+            {/* Capacity bar */}
+            <div className="card mb-6">
+              <div className="flex items-center justify-between mb-2 text-sm">
+                <span className="text-gray-500">{t("events.rsvpProgress")}</span>
+                <span className={cn("font-semibold", isFull ? "text-red-500" : "text-accent")}>{pct}%</span>
               </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-              {event.status === "PUBLISHED" && !isFull && (
-                <Button
-                  onClick={handleRsvp}
-                  isLoading={loading}
-                  variant={isRsvpd ? "ghost" : "primary"}
-                  leftIcon={isRsvpd ? <Check className="w-4 h-4" /> : undefined}
-                  className={cn("min-w-[140px]", isRsvpd && "border border-slate-200")}
-                >
-                  {isRsvpd ? t("events.rsvpd") : t("events.rsvp")}
-                </Button>
+              <div className="w-full bg-slate-100 rounded-full h-2">
+                <div className={cn("h-2 rounded-full transition-all", isFull ? "bg-red-400" : pct > 80 ? "bg-orange-400" : "bg-accent")} style={{ width: `${pct}%` }} />
+              </div>
+              {event.rsvp_deadline && (
+                <p className="text-xs text-gray-400 mt-2">{t("events.rsvpDeadline")}: {formatDate(event.rsvp_deadline)}</p>
               )}
-              {isFull && <span className="text-red-500 font-medium text-sm">{t("events.fullCapacity")}</span>}
-              {!user && event.status === "PUBLISHED" && (
-                <p className="text-sm text-gray-400">
-                  <a href="/login" className="text-accent hover:underline">{t("events.signIn")}</a> {t("events.signInToRsvp")}
-                </p>
+            </div>
+
+            {/* RSVP CTA */}
+            <div className="flex gap-3">
+              {isRsvpd ? (
+                <Button variant="outline" leftIcon={<Check className="w-4 h-4 text-green-500" />} onClick={handleRsvp} isLoading={loading}>
+                  {t("events.rsvpd")}
+                </Button>
+              ) : (
+                <Button onClick={handleRsvp} isLoading={loading} disabled={isFull || event.status !== "PUBLISHED"}>
+                  {isFull ? t("events.full") : t("events.rsvp")}
+                </Button>
               )}
             </div>
           </motion.div>
         </div>
-      </div>
+      </section>
 
       <ConfirmDialog
         isOpen={confirmOpen}
@@ -149,7 +168,8 @@ export default function EventDetailPage() {
         onCancel={() => setConfirmOpen(false)}
         title={t("events.cancelRsvpTitle")}
         message={t("events.cancelRsvpMessage")}
-        confirmLabel={t("events.cancelRsvpConfirm")}
+        confirmLabel={t("events.cancelRsvp")}
+        variant="danger"
         isLoading={loading}
       />
     </PageLayout>
