@@ -1,77 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import { getUserFromRequest, requireRole, EC_ROLES } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
 
-function getUserFromToken(request: NextRequest) {
-  try {
-    const token = request.cookies.get('auth_token')?.value;
-    if (!token) return null;
-
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_PUBLIC_KEY || 'your-secret-key',
-      { algorithms: ['RS256'] }
-    ) as any;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
-
+// GET - List members
 export async function GET(request: NextRequest) {
   try {
-    const user = getUserFromToken(request);
-    if (!user) {
+    const user = getUserFromRequest(request);
+    const roleError = requireRole(user, [...EC_ROLES, 'FACULTY_ADVISOR']);
+    if (roleError) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: roleError.error },
+        { status: roleError.status }
       );
     }
 
-    // Only EC officers and above can list members
-    if (!['EC_OFFICER', 'PRESIDENT', 'SECRETARY', 'SYSTEM_ADMIN'].includes(user.role)) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      );
-    }
+    const { searchParams } = request.nextUrl;
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const skip = parseInt(searchParams.get('skip') || '0');
+    const status = searchParams.get('status');
+    const batchYear = searchParams.get('batchYear');
+    const search = searchParams.get('search');
 
-    const { page = '1', limit = '20', status } = Object.fromEntries(
-      request.nextUrl.searchParams
-    ) as Record<string, string>;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const whereClause: any = {};
-    if (status) {
-      whereClause.status = status;
+    const where: any = {};
+    if (status) where.status = status;
+    if (batchYear) where.batch_year = parseInt(batchYear);
+    if (search) {
+      where.OR = [
+        { full_name: { contains: search, mode: 'insensitive' } },
+        { student_id: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     const members = await prisma.members.findMany({
-      where: whereClause,
-      include: { user: { select: { email: true, role: true } } },
-      skip,
-      take: parseInt(limit),
+      where,
+      include: {
+        user: {
+          select: {
+            email: true,
+            role: true,
+          },
+        },
+      },
       orderBy: { created_at: 'desc' },
+      take: limit,
+      skip,
     });
 
-    const total = await prisma.members.count({ where: whereClause });
+    const total = await prisma.members.count({ where });
 
     return NextResponse.json(
       {
         data: members,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / parseInt(limit)),
-        },
+        pagination: { limit, skip, total },
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error('List members error:', error);
+    console.error('Fetch members error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch members' },
       { status: 500 }

@@ -4,8 +4,9 @@ import { getUserFromRequest, EC_ROLES } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!EC_ROLES.includes(user.role))
@@ -13,7 +14,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const { title, content, noticeType } = await request.json();
     const updated = await prisma.notices.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: title ?? undefined,
         content: content ?? undefined,
@@ -27,14 +28,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!EC_ROLES.includes(user.role))
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    await prisma.notices.delete({ where: { id: params.id } });
+    await prisma.notices.delete({ where: { id } });
     return NextResponse.json({ message: 'Notice deleted' }, { status: 200 });
   } catch (error) {
     console.error('Delete notice error:', error);

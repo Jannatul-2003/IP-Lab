@@ -4,17 +4,18 @@ import { getUserFromRequest, EC_ROLES } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!EC_ROLES.includes(user.role))
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    await prisma.media.delete({ where: { id: params.id } });
+    await prisma.media.delete({ where: { id } });
 
     await prisma.audit_log.create({
-      data: { actor_id: user.userId as any, action: 'DELETE_MEDIA', entity_type: 'media', entity_id: params.id as any },
+      data: { actor_id: user.userId as any, action: 'DELETE_MEDIA', entity_type: 'media', entity_id: id as any },
     });
 
     return NextResponse.json({ message: 'Media deleted' }, { status: 200 });

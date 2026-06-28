@@ -4,16 +4,17 @@ import { getUserFromRequest } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest, { params }: { params: { tid: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ tid: string }> }) {
   try {
+    const { tid } = await params;
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const term = await prisma.committee_terms.findUnique({ where: { id: params.tid } });
+    const term = await prisma.committee_terms.findUnique({ where: { id: tid } });
     if (!term) return NextResponse.json({ error: 'Committee term not found' }, { status: 404 });
 
     const budgets = await prisma.budgets.findMany({
-      where: { term_id: params.tid },
+      where: { term_id: tid },
       include: {
         event: { select: { id: true, title: true } },
         expenditures: true,

@@ -1,56 +1,66 @@
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
+import jwt from 'jsonwebtoken';
 
-export interface TokenPayload {
+export const EC_ROLES = ['EC_OFFICER', 'PRESIDENT', 'SECRETARY', 'FACULTY_ADVISOR', 'SYSTEM_ADMIN'];
+export const ADMIN_ROLES = ['SYSTEM_ADMIN', 'FACULTY_ADVISOR'];
+
+export interface DecodedToken {
   userId: string;
   email: string;
   role: string;
+  iat?: number;
+  exp?: number;
 }
 
-export async function getTokenFromCookies(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return cookieStore.get('auth_token')?.value || null;
-}
-
-export async function getUserFromToken(): Promise<TokenPayload | null> {
+export function getUserFromRequest(request: NextRequest): DecodedToken | null {
   try {
-    const token = await getTokenFromCookies();
+    // Try to get token from Authorization header first (Bearer token)
+    const authHeader = request.headers.get('authorization');
+    let token = null;
+
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      // Fallback to cookie
+      token = request.cookies.get('auth_token')?.value;
+    }
+
     if (!token) return null;
 
     const decoded = jwt.verify(
       token,
       process.env.JWT_PUBLIC_KEY || 'your-secret-key',
       { algorithms: ['RS256'] }
-    ) as TokenPayload;
+    ) as DecodedToken;
+
     return decoded;
-  } catch {
+  } catch (error) {
+    console.error('Token verification error:', error);
     return null;
   }
 }
 
-export function isAuthenticated(user: TokenPayload | null): boolean {
-  return user !== null;
+export function generateAccessToken(userId: string, email: string, role: string): string {
+  return jwt.sign(
+    { userId, email, role },
+    process.env.JWT_PRIVATE_KEY || 'your-secret-key',
+    { expiresIn: '24h', algorithm: 'RS256' }
+  );
 }
 
-export function hasRole(user: TokenPayload | null, roles: string[]): boolean {
-  return user !== null && roles.includes(user.role);
-}
-
-// For use inside Next.js route handlers (takes NextRequest)
-export function getUserFromRequest(request: NextRequest): TokenPayload | null {
-  try {
-    const token = request.cookies.get('auth_token')?.value;
-    if (!token) return null;
-    return jwt.verify(
-      token,
-      process.env.JWT_PUBLIC_KEY || 'your-secret-key',
-      { algorithms: ['RS256'] }
-    ) as TokenPayload;
-  } catch {
-    return null;
+export function requireAuth(user: DecodedToken | null) {
+  if (!user) {
+    return { error: 'Unauthorized', status: 401 };
   }
+  return null;
 }
 
-export const EC_ROLES = ['EC_OFFICER', 'PRESIDENT', 'SECRETARY', 'SYSTEM_ADMIN'];
-export const PRESIDENT_ROLES = ['PRESIDENT', 'SYSTEM_ADMIN'];
+export function requireRole(user: DecodedToken | null, roles: string[]) {
+  if (!user) {
+    return { error: 'Unauthorized', status: 401 };
+  }
+  if (!roles.includes(user.role)) {
+    return { error: 'Forbidden - Insufficient permissions', status: 403 };
+  }
+  return null;
+}

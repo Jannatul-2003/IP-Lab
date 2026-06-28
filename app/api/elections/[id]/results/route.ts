@@ -4,16 +4,17 @@ import { getUserFromRequest } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const election = await prisma.elections.findUnique({ where: { id: params.id } });
+    const election = await prisma.elections.findUnique({ where: { id } });
     if (!election) return NextResponse.json({ error: 'Election not found' }, { status: 404 });
 
     const candidates = await prisma.candidates.findMany({
-      where: { election_id: params.id },
+      where: { election_id: id },
       include: { member: { select: { full_name: true, student_id: true, batch_year: true } } },
       orderBy: [{ position: 'asc' }, { phase1_votes: 'desc' }],
     });

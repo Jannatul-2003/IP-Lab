@@ -1,119 +1,209 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getUserFromRequest } from '@/lib/auth-utils';
+import { getUserFromRequest, requireAuth } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+// POST - Cast a vote
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     const user = getUserFromRequest(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const election = await prisma.elections.findUnique({ where: { id: params.id } });
-    if (!election) return NextResponse.json({ error: 'Election not found' }, { status: 404 });
-
-    const isPhase1 = election.status === 'PHASE1_OPEN';
-    const isPhase2 = election.status === 'PHASE2_OPEN';
-    if (!isPhase1 && !isPhase2)
-      return NextResponse.json({ error: 'Voting is not currently open' }, { status: 400 });
-
-    const phase = isPhase1 ? 'phase1' : 'phase2';
-
-    const member = await prisma.members.findUnique({ where: { user_id: user.userId } });
-    if (!member) return NextResponse.json({ error: 'Member profile not found' }, { status: 404 });
-    if (member.status !== 'ACTIVE')
-      return NextResponse.json({ error: 'Only active members can vote' }, { status: 403 });
-
-    // votes: [{ candidateId, position }]
-    const { votes } = await request.json();
-    if (!Array.isArray(votes) || votes.length === 0)
-      return NextResponse.json({ error: 'votes array is required' }, { status: 400 });
-
-    // Votes are anonymized (voter_id nulled) immediately after casting, so the
-    // audit log — not the votes table — is the authoritative record of which
-    // positions/phases this member has already voted in.
-    const priorVoteLogs = await prisma.audit_log.findMany({
-      where: {
-        actor_id: user.userId as any,
-        entity_type: 'elections',
-        entity_id: params.id as any,
-        action: 'VOTE_CAST',
-      },
-    });
-    const hasVoted = (position: string) =>
-      priorVoteLogs.some((log) => {
-        const payload = log.payload as any;
-        return payload?.position === position && payload?.phase === phase;
-      });
-
-    const results = [];
-
-    for (const { candidateId, position } of votes) {
-      if (hasVoted(position)) {
-        return NextResponse.json(
-          { error: `Already voted for ${position} in ${phase}` },
-          { status: 409 }
-        );
-      }
-
-      // Validate candidate
-      const candidate = await prisma.candidates.findUnique({ where: { id: candidateId } });
-      if (!candidate || candidate.election_id !== params.id || candidate.position !== position)
-        return NextResponse.json({ error: `Invalid candidate for ${position}` }, { status: 400 });
-
-      if (isPhase2 && !candidate.shortlisted)
-        return NextResponse.json({ error: `Candidate not shortlisted for phase 2` }, { status: 400 });
-
-      // Cast the vote, then immediately dissociate the voter from the ballot
-      // (NFR-TC-005 voting anonymity) and record the action — without the
-      // candidate choice — in the audit log for duplicate-vote detection.
-      const vote = await prisma.$transaction(async (tx) => {
-        const created = await tx.votes.create({
-          data: {
-            election_id: params.id,
-            voter_id: member.id,
-            candidate_id: candidateId,
-            position,
-            phase,
-          },
-        });
-
-        const anonymized = await tx.votes.update({
-          where: { id: created.id },
-          data: { voter_id: null },
-        });
-
-        await tx.audit_log.create({
-          data: {
-            actor_id: user.userId as any,
-            action: 'VOTE_CAST',
-            entity_type: 'elections',
-            entity_id: params.id as any,
-            payload: { position, phase },
-          },
-        });
-
-        if (isPhase1) {
-          await tx.candidates.update({
-            where: { id: candidateId },
-            data: { phase1_votes: { increment: 1 } },
-          });
-        } else {
-          await tx.candidates.update({
-            where: { id: candidateId },
-            data: { phase2_votes: { increment: 1 } },
-          });
-        }
-
-        return anonymized;
-      });
-
-      results.push(vote);
+    const authError = requireAuth(user);
+    if (authError) {
+      return NextResponse.json(
+        { error: authError.error },
+        { status: authError.status }
+      );
     }
 
-    return NextResponse.json({ message: 'Votes cast successfully', votes: results }, { status: 201 });
+    const { candidateId, position, phase } = await request.json();
+
+    if (!candidateId || !position || !phase) {
+      return NextResponse.json(
+        { error: 'candidateId, position, and phase are required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify election exists and is in voting phase
+    const election = await prisma.elections.findUnique({
+      where: { id },
+    });
+
+    if (!election) {
+      return NextResponse.json(
+        { error: 'Election not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if election is active for this phase
+    const now = new Date();
+    if (phase === 'phase1') {
+      if (now < election.phase1_start || now > election.phase1_end) {
+        return NextResponse.json(
+          { error: 'Phase 1 voting is not active' },
+          { status: 400 }
+        );
+      }
+    } else if (phase === 'phase2') {
+      if (!election.phase2_start || !election.phase2_end) {
+        return NextResponse.json(
+          { error: 'Phase 2 is not available' },
+          { status: 400 }
+        );
+      }
+      if (now < election.phase2_start || now > election.phase2_end) {
+        return NextResponse.json(
+          { error: 'Phase 2 voting is not active' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Get voter's member profile
+    const member = await prisma.members.findUnique({
+      where: { user_id: user!.userId },
+    });
+
+    if (!member) {
+      return NextResponse.json(
+        { error: 'Member profile not found' },
+        { status: 404 }
+      );
+    }
+
+    // Verify candidate exists
+    const candidate = await prisma.candidates.findUnique({
+      where: { id: candidateId },
+    });
+
+    if (!candidate || candidate.election_id !== id) {
+      return NextResponse.json(
+        { error: 'Candidate not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if voter already voted for this position in this phase
+    const existingVote = await prisma.votes.findFirst({
+      where: {
+        election_id: id,
+        voter_id: member.id,
+        position,
+        phase,
+      },
+    });
+
+    if (existingVote) {
+      return NextResponse.json(
+        { error: 'You have already voted for this position in this phase' },
+        { status: 409 }
+      );
+    }
+
+    // Create vote
+    const vote = await prisma.votes.create({
+      data: {
+        election_id: id,
+        voter_id: member.id,
+        candidate_id: candidateId,
+        position,
+        phase,
+      },
+      include: {
+        candidate: {
+          select: { id: true, member: { select: { full_name: true } } },
+        },
+      },
+    });
+
+    // Increment vote count for candidate
+    const phaseVoteField = phase === 'phase1' ? 'phase1_votes' : 'phase2_votes';
+    await prisma.candidates.update({
+      where: { id: candidateId },
+      data: {
+        [phaseVoteField]: { increment: 1 },
+      },
+    });
+
+    await prisma.audit_log.create({
+      data: {
+        actor_id: user!.userId as any,
+        action: 'CAST_VOTE',
+        entity_type: 'votes',
+        entity_id: vote.id as any,
+        payload: { candidateId, position, phase },
+      },
+    });
+
+    return NextResponse.json(
+      { message: 'Vote recorded successfully', vote },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Cast vote error:', error);
-    return NextResponse.json({ error: 'Failed to cast vote' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to cast vote' },
+      { status: 500 }
+    );
+  }
+}
+
+// GET - Get voting status
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const user = getUserFromRequest(request);
+    const authError = requireAuth(user);
+    if (authError) {
+      return NextResponse.json(
+        { error: authError.error },
+        { status: authError.status }
+      );
+    }
+
+    const member = await prisma.members.findUnique({
+      where: { user_id: user!.userId },
+    });
+
+    if (!member) {
+      return NextResponse.json(
+        { error: 'Member profile not found' },
+        { status: 404 }
+      );
+    }
+
+    const votes = await prisma.votes.findMany({
+      where: {
+        election_id: id,
+        voter_id: member.id,
+      },
+      select: {
+        position: true,
+        phase: true,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        votedFor: votes,
+        positions: votes.map((v) => `${v.position}-${v.phase}`),
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Get voting status error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch voting status' },
+      { status: 500 }
+    );
   }
 }

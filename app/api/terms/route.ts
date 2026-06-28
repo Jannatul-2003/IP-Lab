@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getUserFromRequest, PRESIDENT_ROLES } from '@/lib/auth-utils';
+import { getUserFromRequest, requireRole, ADMIN_ROLES } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
 
@@ -19,9 +19,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const user = getUserFromRequest(request);
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!PRESIDENT_ROLES.includes(user.role))
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const roleError = requireRole(user, ADMIN_ROLES);
+    if (roleError) return NextResponse.json({ error: roleError.error }, { status: roleError.status });
 
     const { termNumber, startDate, endDate } = await request.json();
     if (!termNumber || !startDate)
@@ -37,7 +36,7 @@ export async function POST(request: NextRequest) {
     });
 
     await prisma.audit_log.create({
-      data: { actor_id: user.userId as any, action: 'CREATE_TERM', entity_type: 'committee_terms', entity_id: term.id as any },
+      data: { actor_id: user!.userId as any, action: 'CREATE_TERM', entity_type: 'committee_terms', entity_id: term.id as any },
     });
 
     return NextResponse.json(term, { status: 201 });

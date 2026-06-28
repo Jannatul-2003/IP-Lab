@@ -5,8 +5,9 @@ import { getUserFromRequest, EC_ROLES } from '@/lib/auth-utils';
 const prisma = new PrismaClient();
 
 // PUT /api/members/[id] — approve / reject / suspend / cancel
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!EC_ROLES.includes(user.role))
@@ -27,7 +28,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (validActions[action].joinedDate) updateData.joined_date = validActions[action].joinedDate;
 
     const member = await prisma.members.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: { user: { select: { email: true, role: true } } },
     });
@@ -37,7 +38,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         actor_id: user.userId as any,
         action: `MEMBER_${action.toUpperCase()}`,
         entity_type: 'members',
-        entity_id: params.id as any,
+        entity_id: id as any,
         payload: { newStatus: updateData.status },
       },
     });
@@ -50,20 +51,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE /api/members/[id] — soft delete
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (!['PRESIDENT', 'SYSTEM_ADMIN'].includes(user.role))
       return NextResponse.json({ error: 'Forbidden — only PRESIDENT/ADMIN' }, { status: 403 });
 
     await prisma.members.update({
-      where: { id: params.id },
+      where: { id },
       data: { deleted_at: new Date(), status: 'CANCELLED' },
     });
 
     await prisma.audit_log.create({
-      data: { actor_id: user.userId as any, action: 'DELETE_MEMBER', entity_type: 'members', entity_id: params.id as any },
+      data: { actor_id: user.userId as any, action: 'DELETE_MEMBER', entity_type: 'members', entity_id: id as any },
     });
 
     return NextResponse.json({ message: 'Member removed' }, { status: 200 });

@@ -1,39 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import { getUserFromRequest, requireAuth } from '@/lib/auth-utils';
 
 const prisma = new PrismaClient();
-
-function getUserFromToken(request: NextRequest) {
-  try {
-    const token = request.cookies.get('auth_token')?.value;
-    if (!token) return null;
-
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_PUBLIC_KEY || 'your-secret-key',
-      { algorithms: ['RS256'] }
-    ) as any;
-    return decoded;
-  } catch {
-    return null;
-  }
-}
 
 // GET - Get user profile
 export async function GET(request: NextRequest) {
   try {
-    const user = getUserFromToken(request);
-    if (!user) {
+    const user = getUserFromRequest(request);
+    const authError = requireAuth(user);
+    if (authError) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: authError.error },
+        { status: authError.status }
       );
     }
 
     const member = await prisma.members.findUnique({
-      where: { user_id: user.userId },
-      include: { user: { select: { email: true, role: true } } },
+      where: { user_id: user!.userId },
+      include: {
+        user: {
+          select: {
+            email: true,
+            role: true,
+            created_at: true,
+          },
+        },
+      },
     });
 
     if (!member) {
@@ -43,7 +36,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(member, { status: 200 });
+    return NextResponse.json(
+      {
+        ...member,
+        user: member.user,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Get profile error:', error);
     return NextResponse.json(
@@ -56,21 +55,48 @@ export async function GET(request: NextRequest) {
 // PUT - Update user profile
 export async function PUT(request: NextRequest) {
   try {
-    const user = getUserFromToken(request);
-    if (!user) {
+    const user = getUserFromRequest(request);
+    const authError = requireAuth(user);
+    if (authError) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: authError.error },
+        { status: authError.status }
       );
     }
 
     const { fullName, phone } = await request.json();
 
+    if (!fullName && !phone) {
+      return NextResponse.json(
+        { error: 'At least one field (fullName or phone) must be provided' },
+        { status: 400 }
+      );
+    }
+
     const updatedMember = await prisma.members.update({
-      where: { user_id: user.userId },
+      where: { user_id: user!.userId },
       data: {
-        full_name: fullName || undefined,
-        phone: phone || undefined,
+        ...(fullName && { full_name: fullName }),
+        ...(phone && { phone }),
+      },
+      include: {
+        user: {
+          select: {
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    // Log audit
+    await prisma.audit_log.create({
+      data: {
+        actor_id: user!.userId as any,
+        action: 'UPDATE_PROFILE',
+        entity_type: 'members',
+        entity_id: updatedMember.id as any,
+        payload: { fullName, phone },
       },
     });
 

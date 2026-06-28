@@ -6,8 +6,9 @@ const prisma = new PrismaClient();
 
 const VALID_ROLES = ['GUEST', 'MEMBER', 'VOLUNTEER', 'EC_OFFICER', 'PRESIDENT', 'SECRETARY', 'FACULTY_ADVISOR', 'SYSTEM_ADMIN'];
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (user.role !== 'SYSTEM_ADMIN')
@@ -18,7 +19,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: `Invalid role. Valid roles: ${VALID_ROLES.join(', ')}` }, { status: 400 });
 
     const updated = await prisma.users.update({
-      where: { id: params.id },
+      where: { id },
       data: { role },
       select: { id: true, email: true, role: true, updated_at: true },
     });
@@ -28,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         actor_id: user.userId as any,
         action: 'CHANGE_USER_ROLE',
         entity_type: 'users',
-        entity_id: params.id as any,
+        entity_id: id as any,
         payload: { newRole: role },
       },
     });
@@ -40,24 +41,25 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const user = getUserFromRequest(request);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     if (user.role !== 'SYSTEM_ADMIN')
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    if (params.id === user.userId)
+    if (id === user.userId)
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
 
     // Soft delete via member if exists
     await prisma.members.updateMany({
-      where: { user_id: params.id },
+      where: { user_id: id },
       data: { deleted_at: new Date(), status: 'CANCELLED' },
     });
 
     await prisma.audit_log.create({
-      data: { actor_id: user.userId as any, action: 'DELETE_USER', entity_type: 'users', entity_id: params.id as any },
+      data: { actor_id: user.userId as any, action: 'DELETE_USER', entity_type: 'users', entity_id: id as any },
     });
 
     return NextResponse.json({ message: 'User deactivated' }, { status: 200 });
